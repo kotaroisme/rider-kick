@@ -3,14 +3,14 @@
 require_relative "lib/rider_kick/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "rider_kick"
+  spec.name = "rider-kick"
   spec.version = RiderKick::VERSION
   spec.authors = ["Kotaro Minami"]
   spec.email = ["kotaroisme@gmail.com"]
 
   spec.summary = "Clean Architecture Framework."
   spec.description = "An attempt at building a reusable Clean Architecture framework for Ruby."
-  spec.homepage = "https://github.com/kotaroisme/rider_kick"
+  spec.homepage = "https://github.com/kotaroisme/rider-kick"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 

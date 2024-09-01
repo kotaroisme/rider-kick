@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rider_kick (0.0.1)
+    rider-kick (0.0.1)
       dry-matcher (~> 1.0.0)
       dry-monads (~> 1.6.0)
       dry-struct (~> 1.6.0)
@@ -155,7 +155,7 @@ DEPENDENCIES
   bundler (~> 2.5.18)
   byebug
   rake (~> 13.2.1)
-  rider_kick!
+  rider-kick!
   rspec (~> 3.13.0)
   rubocop-performance
   rubocop-rails-omakase
