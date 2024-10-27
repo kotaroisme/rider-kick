@@ -1,0 +1,15 @@
+class Core::UseCases::Contract::Pagination
+  def call
+    pagination
+  end
+
+  private
+
+  def pagination
+    Dry::Schema.Params do
+      optional(:page).maybe(:integer)
+      optional(:per_page).maybe(:integer)
+      optional(:search).maybe(:string)
+    end
+  end
+end

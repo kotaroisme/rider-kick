@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+  def initialize(id:)
+    @id  = id
+  end
+
+  def call(builder: true)
+    resource = <%= @model_class %>.find_by(id: @id)
+    return Failure '<%= @subject_class %> not found' unless resource.present?
+    unless resource.destroy
+      return Failure build_errors(resource)
+    end
+    Success '<%= @subject_class%> Destroyed.'
+  end
+end

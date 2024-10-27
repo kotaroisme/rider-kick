@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+class Core::Entities::<%=  @subject_class %> < Dry::Struct
+<% (['id'] + @fields + @uploaders + ['created_at', 'updated_at']).each do |field| -%>
+<% column_type = get_column_type(field) -%>
+<% dry_type = @entity_type_mapping[column_type.to_s] || 'Types::Strict::String' -%>
+  attribute :<%= field %>, <%= dry_type %>
+<% end -%>
+end

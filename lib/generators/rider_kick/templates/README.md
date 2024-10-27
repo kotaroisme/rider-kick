@@ -1,43 +1,46 @@
-# RiderKick
-This gem provides helper interfaces and classes to assist in the construction of application with
-Clean Architecture, as described in [Robert Martin's seminal book](https://www.amazon.com/gp/product/0134494164).
+## Setup project
 
-
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'rider-kick'
+### Init Project
+```bash
+$ cp env.example .env.development
+$ bundle install
+$ rails db:create
+$ rails db:migrate
+$ rails db:seed
+```
+### Run Server
+```bash
+$ rails s -b 0.0.0.0 -e development
+# open new tab then run
+# open your browser then serve to http://0.0.0.0:3000
 ```
 
-And then execute:
+### Run Console
+```bash
+$ rails console
+(dev)> use_case = Core::UseCases::GetVersion
+(dev)> contract = use_case.contract!({})
+(dev)> result   = use_case.new(contract).result
+=> Success({:version=>"v1"}) # success
+(dev)> result.success?
+=> true
+(dev)> result.success
+=> {:version=>"0.0.1"}
+```
 
-    $ bundle install
-    $ bundle binstubs rider-kick
-    $ rails generate rider_kick:clean_arch --setup
-    $ rails db:drop db:create db:migrate db:seed
-    $ rubocop -a
-
-## Philosophy
-
-The intention of this gem is to help you build applications that are built from the use case down,
-and decisions about I/O can be deferred until the last possible moment.
-
+Project Structure
 ## Clean Architecture
 This structure provides helper interfaces and classes to assist in the construction of application with Clean Architecture, as described in Robert Martin's seminal book.
 
 ```
 - app
-  - services
-    - api
-      - ...
   - domains 
-    - entities (Contract Response)
-    - builder
-    - repositories (Business logic)
-    - use_cases (Just Usecase)
-    - utils (Class Reusable)
+    - core
+      - entities (Contract Response)
+      - builder
+      - repositories (Business logic)
+      - use_cases (Just Usecase)
+      - utils (Class Reusable)
 ```
 ## Screaming architecture - use cases as an organisational principle
 Uncle Bob suggests that your source code organisation should allow developers to easily find a listing of all use cases your application provides. Here's an example of how this might look in a this application.
@@ -61,5 +64,6 @@ Note that the use case name contains:
     # retail_customer_opens_bank_account.rb
     # admin_fetch_info.rb [specific usecase]
     # fetch_info.rb [generic usecase] every role can access it
-```
+    ```
 
+Happy Coding!

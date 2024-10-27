@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'spec_helper'
 require 'rider_kick/matchers/use_case_result'
 
 RSpec.describe RiderKick::Matchers::UseCaseResult do

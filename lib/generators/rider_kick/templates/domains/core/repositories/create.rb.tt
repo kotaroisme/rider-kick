@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+  def initialize(params: {})
+    @params     = prepare! params, sanitize: true
+  end
+
+  def call(builder: true)
+    resource = <%= @model_class %>.new(@params.to_h)
+    unless resource.save
+      return Failure build_errors(resource)
+    end
+    Success Core::Builders::<%= @subject_class %>.new(resource).build
+  end
+end

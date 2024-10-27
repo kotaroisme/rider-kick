@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+class Core::Builders::Pagination < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity Core::Entities::Pagination
+
+  def attributes_for_entity
+    {
+      total_count: params[:count],
+      page:        params.page,
+      per_page:    params.limit,
+      page_count:  params.last
+    }
+  end
+end

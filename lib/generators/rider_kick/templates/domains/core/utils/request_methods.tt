@@ -1,0 +1,81 @@
+# frozen_string_literal: true
+
+module Core::Utils::RequestMethods
+  include Dry::Monads[:result, :do]
+  DEFAULT_REQUEST_CONTENT_TYPE = 'application/json;charset=UTF-8'
+  private_constant :DEFAULT_REQUEST_CONTENT_TYPE
+
+  def delete(url:, body:, headers: nil, authorization: nil, is_ssl: false, timeout: 0)
+    headers = normalize_request_headers(headers, caller(1..1).first)
+    url     = create_url(url)
+    create_request(:delete, url, headers: headers, auth: authorization, body: body, is_ssl: is_ssl, timeout: timeout)
+  end
+
+  def get(url:, body: nil, headers: nil, authorization: nil, is_ssl: false, timeout: 0)
+    headers = normalize_request_headers(headers, caller(1..1).first)
+    url     = url + '?' + body.to_query if body.present?
+    url     = create_url(url)
+    create_request(:get, url, headers: headers, auth: authorization, body: body, is_ssl: is_ssl, timeout: timeout)
+  end
+
+  def post(url:, body:, headers: nil, authorization: nil, is_ssl: false, timeout: 0)
+    headers = normalize_request_headers(headers, caller(1..1).first)
+    url     = create_url(url)
+    create_request(:post, url, headers: headers, auth: authorization, body: body, is_ssl: is_ssl, timeout: timeout)
+  end
+
+  def put(url:, body:, headers: nil, authorization: nil, is_ssl: false, timeout: 0)
+    headers = normalize_request_headers(headers, caller(1..1).first)
+    url     = create_url(url)
+    create_request(:put, url, headers: headers, auth: authorization, body: body, is_ssl: is_ssl, timeout: timeout)
+  end
+
+  def patch(url:, body:, headers: nil, authorization: nil, is_ssl: false, timeout: 0)
+    headers = normalize_request_headers(headers, caller(1..1).first)
+    url     = create_url(url)
+    create_request(:patch, url, headers: headers, auth: authorization, body: body, is_ssl: is_ssl, timeout: timeout)
+  end
+
+  private
+
+  def normalize_request_headers(headers, caller_location = caller(1..1).first)
+    return headers unless headers.is_a?(Array)
+
+    warn "DEPRECATION WARNING: do not wrap request headers in an array. (called from #{caller_location})"
+    {}.merge!(*headers.select { |n| n.respond_to? :to_hash })
+  end
+
+  def create_url(url)
+    URI.parse(url)
+  end
+
+  def parse_response(response)
+    begin
+      res = JSON.parse(response.body)
+    rescue => e
+      return Failure e
+    end
+    unless ['200', '201', '202'].include?(response.code.to_s)
+      return Failure Hashie::Mash.new(res)
+    end
+    Success Hashie::Mash.new(res)
+  end
+
+  def create_request(method, url, headers: nil, auth: nil, body: nil, is_ssl: Rails.env.eql?('production'), timeout: 0)
+    request                  = Net::HTTP.const_get(method.to_s.classify).new(url)
+    request['Authorization'] = auth if auth.present?
+    request['Content-Type']  = DEFAULT_REQUEST_CONTENT_TYPE
+    request['Accept']        = DEFAULT_REQUEST_CONTENT_TYPE
+    headers&.each { |key, value| request[key] = value }
+    request.body = body.to_json unless body.nil?
+    http         = Net::HTTP.new(url.host, url.port).tap do |http|
+      http.verify_mode  = is_ssl ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+      http.open_timeout = 60
+      http.read_timeout = 60
+    end
+    if is_ssl
+      http.use_ssl = true
+    end
+    http.request(request)
+  end
+end

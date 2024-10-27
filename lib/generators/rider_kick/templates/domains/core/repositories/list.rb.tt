@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+class Core::Repositories::<%= @scope_class %>::<%= @repository_class%> < Core::Repositories::AbstractRepository
+   def initialize(params:)
+      @params = prepare! params, sanitize: true
+      build_pagination_variable! @params
+  end
+
+  def call(builder: true)
+    resources = <%= @model_class %>
+    if @search.present?
+      # resources = resources.where('LOWER(caption) LIKE ?', "%#{@search.downcase}%")
+    end
+    return Success [] unless resources.present?
+    pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
+    response      = results.map { |result| Core::Builders::<%= @subject_class %>.new(result).build }
+    Success Hashie::Mash.new(response: response, meta: paginate!(pagy))
+  end
+end

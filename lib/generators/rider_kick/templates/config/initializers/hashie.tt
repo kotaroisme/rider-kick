@@ -1,0 +1,15 @@
+as_attributes = <<-RUBY
+def attributes
+ ActiveSupport::HashWithIndifferentAccess.new(self.as_json).symbolize_keys
+end
+RUBY
+
+to_methods = <<-RUBY
+def to_mash
+  Hashie::Mash.new(self)
+end
+RUBY
+Hash.class_eval(as_attributes)
+Hash.class_eval(to_methods)
+Hashie::Mash.class_eval(as_attributes)
+ActiveSupport::HashWithIndifferentAccess.class_eval(as_attributes)

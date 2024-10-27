@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+class Core::UseCases::Contract::Default
+  def call
+    default
+  end
+
+  private
+
+  def default
+    Dry::Schema.Params do
+      required(:organization_id).filled(:string)
+    end
+  end
+end

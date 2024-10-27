@@ -6,7 +6,6 @@ require 'rider_kick/matchers/use_case_result'
 require 'rider_kick/use_cases/abstract_use_case'
 require 'rider_kick/use_cases/contract'
 
-require 'rider_kick/types'
 require 'rider_kick/version'
 
 module RiderKick

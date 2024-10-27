@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
+  contract do
+    params(Core::UseCases::Contract::Default.new.call) do
+      required(:id).filled(:string)
+    end
+  end
+  # Set specific return monads at method 'result'
+  include Dry::Monads::Do.for(:result)
+
+  def result
+    params = yield build_parameter!
+    Core::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(id: params.id).call(builder: true)
+  end
+end

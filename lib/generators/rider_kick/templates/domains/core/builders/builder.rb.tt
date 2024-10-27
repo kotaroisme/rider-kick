@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+class Core::Builders::<%=  @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity Core::Entities::<%= @subject_class%>
+<% if @uploaders.present? -%>
+  def attributes_for_entity
+    {
+<% @uploaders.each do |upload| -%>
+      <%= upload %>: (Rails.application.routes.url_helpers.polymorphic_url(params.<%= upload %>) rescue ''),
+<% end -%>
+    }
+  end
+<% end -%>
+end

@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+class Core::Entities::Pagination < Dry::Struct
+  attribute :total_count, Types::Strict::Integer
+  attribute :page, Types::Strict::Integer
+  attribute :per_page, Types::Strict::Integer
+  attribute :page_count, Types::Strict::Integer
+end

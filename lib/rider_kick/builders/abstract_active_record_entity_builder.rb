@@ -9,7 +9,7 @@ module RiderKick
     class AbstractActiveRecordEntityBuilder
       # @param [Class] A Dry::Struct based entity that this builder will construct instances of
       def self.acts_as_builder_for_entity(entity_class)
-        @has_many_builders = []
+        @has_many_builders   = []
         @belongs_to_builders = []
 
         define_singleton_method :has_many_builders do
@@ -36,8 +36,9 @@ module RiderKick
       end
 
       # @param [ActiveRecord::Base] An ActiveRecord model to map to the entity
-      def initialize(params)
+      def initialize(params, *args)
         @params = params
+        @args   = args
       end
 
       def build
@@ -47,25 +48,26 @@ module RiderKick
       private
 
       attr_reader :params
+      attr_reader :args
 
       def entity_attribute_names
         @entity_attributes ||= begin
-          if entity_class.respond_to?(:schema) # Dry::Struct
-            schema_keys = entity_class.schema.keys
-          elsif entity_class.respond_to?(:decorator) # T::Struct
-            schema_keys = entity_class.decorator.props.keys
-          else
-            raise 'Cannot determine schema format'
-          end
-          first_key = schema_keys.first
-          if first_key.is_a?(Symbol)
-            schema_keys
-          elsif first_key.respond_to?(:name)
-            schema_keys.map(&:name)
-          else
-            raise 'Cannot determine schema format'
-          end
-        end
+                                 if entity_class.respond_to?(:schema) # Dry::Struct
+                                   schema_keys = entity_class.schema.keys
+                                 elsif entity_class.respond_to?(:decorator) # T::Struct
+                                   schema_keys = entity_class.decorator.props.keys
+                                 else
+                                   raise 'Cannot determine schema format'
+                                 end
+                                 first_key = schema_keys.first
+                                 if first_key.is_a?(Symbol)
+                                   schema_keys
+                                 elsif first_key.respond_to?(:name)
+                                   schema_keys.map(&:name)
+                                 else
+                                   raise 'Cannot determine schema format'
+                                 end
+                               end
       end
 
       def params_attributes
@@ -85,7 +87,7 @@ module RiderKick
       def attributes_for_belongs_to_relations
         self.class.belongs_to_builders.map do |belongs_to_builder_config|
           relation_name, builder_class = belongs_to_builder_config
-          relation = @params.public_send(relation_name)
+          relation                     = @params.public_send(relation_name)
 
           [
             relation_name,
@@ -97,8 +99,8 @@ module RiderKick
       def attributes_for_has_many_relations
         self.class.has_many_builders.map do |has_many_builder_config|
           relation_name, builder_class = has_many_builder_config
-          relations = @params.public_send(relation_name)
-          built_relations = relations.map do |relation|
+          relations                    = @params.public_send(relation_name)
+          built_relations              = relations.map do |relation|
             builder_class.new(relation).build
           end
 

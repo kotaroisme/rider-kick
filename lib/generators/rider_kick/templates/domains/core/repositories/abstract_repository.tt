@@ -1,0 +1,51 @@
+# frozen_string_literal: true
+
+class Core::Repositories::AbstractRepository
+  include Dry::Monads[:result, :do]
+
+  def http
+    extend(Core::Utils::RequestMethods)
+  end
+
+  def parse_response(response)
+    begin
+      res = JSON.parse(response.body)
+    rescue => e
+      return Failure e
+    end
+    unless ['200', '201', '202'].include?(response.code.to_s)
+      return Failure Hashie::Mash.new(res)
+    end
+    Success Hashie::Mash.new(res)
+  end
+
+  def error_messages_for(record)
+    record.errors.to_a.join(', ')
+  end
+
+  def build_errors(resource)
+    errors = []
+    resource.errors.each do |error|
+      errors << Core::Builders::Error.new(error.as_json).build
+    end
+    errors
+  end
+
+  def prepare!(params, sanitize: true)
+    if sanitize
+      Hashie::Mash.new(params.reject { |_, v| v.nil? || (v.is_a?(String) && v.blank?) })
+    else
+      Hashie::Mash.new(params)
+    end
+  end
+
+  def paginate!(pagy)
+    Core::Builders::Pagination.new(Hashie::Mash.new(pagy.as_json)).build
+  end
+
+  def build_pagination_variable!(params)
+    @per_page = params[:per_page] || Pagy::DEFAULT[:limit]
+    @page     = params[:page] || Pagy::DEFAULT[:page]
+    @search   = params[:search]
+  end
+end

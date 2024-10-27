@@ -1,0 +1,11 @@
+Description:
+     Clean Architecture CRUD generator
+
+Example:
+    bin/rails generate rider_kick:clean_arch --setup
+
+    To undo:
+       bin/rails destroy rider_kick:clean_arch --setup
+
+    From scratch:
+        bin/rails generate rider_kick:clean_arch --setup

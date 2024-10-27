@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+class Core::UseCases::GetVersion < RiderKick::UseCases::AbstractUseCase
+  contract do
+    params do
+      # required(:version).filled(:string)
+    end
+  end
+  include Dry::Monads[:result]
+  include Dry::Monads::Do.for(:result)
+
+  def result
+    params   = yield build_parameter!
+    response = { version:  <%= Rails.application.class.module_parent_name %>::VERSION }
+    Success response
+  end
+end

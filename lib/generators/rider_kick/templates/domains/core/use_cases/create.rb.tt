@@ -1,0 +1,24 @@
+# frozen_string_literal: true
+
+class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
+  contract do
+    params(Core::UseCases::Contract::Default.new.call) do
+<% (@fields + @uploaders).each do |field| -%>
+  <% column_type = get_column_type(field) -%>
+  <% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
+<% if @uploaders.include?(field) -%>
+   optional(:<%= field %>).maybe(<%= dry_type %>)
+<% else -%>
+   required(:<%= field %>).filled(<%= dry_type %>)
+<% end -%>
+<% end -%>
+    end
+  end
+
+  include Dry::Monads::Do.for(:result)
+
+  def result
+    params = yield build_parameter!
+    Core::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(params: params).call(builder: true)
+  end
+end

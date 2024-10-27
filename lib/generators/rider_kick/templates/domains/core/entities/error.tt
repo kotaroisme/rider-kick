@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+class Core::Entities::Error < Dry::Struct
+  attribute :attribute, Types::Strict::String
+  attribute :type, Types::Strict::String
+  attribute :options, Types::Hash.optional
+end

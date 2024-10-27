@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+class Core::Builders::Error < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity Core::Entities::Error
+end
