@@ -38,18 +38,18 @@ module RiderKick
     end
 
     def copy_domain_file
-      template 'domains/core/use_cases/contract/pagination.tt', File.join("#{path_app}/domains/core/use_cases/contract", 'pagination.rb')
-      template 'domains/core/use_cases/contract/default.tt', File.join("#{path_app}/domains/core/use_cases/contract", 'default.rb')
-      template 'domains/core/use_cases/get_version.tt', File.join("#{path_app}/domains/core/use_cases", 'get_version.rb')
+      template 'domains/core/use_cases/contract/pagination.rb.tt', File.join("#{path_app}/domains/core/use_cases/contract", 'pagination.rb')
+      template 'domains/core/use_cases/contract/default.rb.tt', File.join("#{path_app}/domains/core/use_cases/contract", 'default.rb')
+      template 'domains/core/use_cases/get_version.rb.tt', File.join("#{path_app}/domains/core/use_cases", 'get_version.rb')
 
-      template 'domains/core/builders/error.tt', File.join("#{path_app}/domains/core/builders", 'error.rb')
-      template 'domains/core/builders/pagination.tt', File.join("#{path_app}/domains/core/builders", 'pagination.rb')
+      template 'domains/core/builders/error.rb.tt', File.join("#{path_app}/domains/core/builders", 'error.rb')
+      template 'domains/core/builders/pagination.rb.tt', File.join("#{path_app}/domains/core/builders", 'pagination.rb')
 
-      template 'domains/core/entities/error.tt', File.join("#{path_app}/domains/core/entities", 'error.rb')
-      template 'domains/core/entities/pagination.tt', File.join("#{path_app}/domains/core/entities", 'pagination.rb')
+      template 'domains/core/entities/error.rb.tt', File.join("#{path_app}/domains/core/entities", 'error.rb')
+      template 'domains/core/entities/pagination.rb.tt', File.join("#{path_app}/domains/core/entities", 'pagination.rb')
 
-      template 'domains/core/repositories/abstract_repository.tt', File.join("#{path_app}/domains/core/utils", 'abstract_repository.rb')
-      template 'domains/core/utils/request_methods.tt', File.join("#{path_app}/domains/core/repositories", 'request_methods.rb')
+      template 'domains/core/repositories/abstract_repository.rb.tt', File.join("#{path_app}/domains/core/repositories", 'abstract_repository.rb')
+      template 'domains/core/utils/request_methods.rb.tt', File.join("#{path_app}/domains/core/utils", 'request_methods.rb')
     end
 
     def setup_initializers
@@ -81,7 +81,7 @@ module RiderKick
 
     # Helper untuk menyalin initializers
     def copy_initializer(file_name)
-      template "config/initializers/#{file_name}.tt", File.join("config/initializers/#{file_name}.rb")
+      template "config/initializers/#{file_name}.rb.tt", File.join("config/initializers/#{file_name}.rb")
     end
 
     def copy_database_config

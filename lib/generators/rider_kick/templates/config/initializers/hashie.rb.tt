@@ -9,6 +9,7 @@ def to_mash
   Hashie::Mash.new(self)
 end
 RUBY
+
 Hash.class_eval(as_attributes)
 Hash.class_eval(to_methods)
 Hashie::Mash.class_eval(as_attributes)

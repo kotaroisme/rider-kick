@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+class Core::Entities::<%=  @subject_class %> < Dry::Struct
+  attribute :blank, Types::Strict::String
+end

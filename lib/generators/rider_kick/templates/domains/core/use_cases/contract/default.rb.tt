@@ -9,7 +9,7 @@ class Core::UseCases::Contract::Default
 
   def default
     Dry::Schema.Params do
-      required(:organization_id).filled(:string)
+      # required(:organization_id).filled(:string)
     end
   end
 end
