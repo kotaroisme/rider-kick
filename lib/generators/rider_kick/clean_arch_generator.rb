@@ -97,6 +97,7 @@ module RiderKick
 
     def gem_dependencies
       <<~RUBY
+
         # Env Variables
         gem 'dotenv-rails'
 

@@ -19,6 +19,32 @@ And then execute:
     $ rails db:drop db:create db:migrate db:seed
     $ rubocop -a
 
+## Usage
+```bash
+Description:
+Clean Architecture generator
+
+Example:
+    To Generate Structure:
+        bin/rails  generate rider_kick:clean_arch --setup
+
+        To undo:
+           bin/rails destroy rider_kick:clean_arch --setup
+
+    To Generate scaffold:
+        bin/rails  generate rider_kick:scaffold Models::Contact actor:user
+
+        To undo:
+           bin/rails destroy rider_kick:scaffold Models::Contact actor:user
+
+    To Generate Domain:
+        bin/rails  generate rider_kick:blank actor:user action:create scope:Contact --use_case --repository --builder --entity
+
+        To undo:
+           bin/rails destroy rider_kick:blank actor:user action:create scope:Contact --use_case --repository --builder --entity
+
+```
+
 ## Philosophy
 
 The intention of this gem is to help you build applications that are built from the use case down,
