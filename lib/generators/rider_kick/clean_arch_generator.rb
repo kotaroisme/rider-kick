@@ -6,6 +6,7 @@ module RiderKick
 
     def validate_setup_option
       raise Thor::Error, 'The --setup option must be specified to create the domain structure.' unless options.setup
+      validation!
     end
 
     def create_gem_dependencies
@@ -25,6 +26,13 @@ module RiderKick
     end
 
     private
+
+    def validation!
+      unless File.exist?('config/initializers/rider_kick.rb')
+        say 'Error must create init configuration for rider_kick!'
+        raise Thor::Error, 'run: bin/rails generate rider_kick:init'
+      end
+    end
 
     def setup_domain_structure
       empty_directory File.join("#{path_app}/domains/core/use_cases/contract")

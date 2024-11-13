@@ -1,11 +1,12 @@
+require 'yaml'
 module RiderKick
   class ScaffoldGenerator < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
 
-    argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
-    argument :arg_settings, type: :hash, default: '', banner: 'actor:user uploader_filed:assets,images,picture,document skip_contract:organization_id'
+    argument :arg_structure, type: :string, default: '', banner: ''
 
     def generate_use_case
+      validation!
       setup_variables
 
       generate_files('create')
@@ -19,17 +20,40 @@ module RiderKick
 
     private
 
-    def setup_variables
-      @variable_subject = arg_model_name.split('::').last.underscore.downcase
-      @model_class      = arg_model_name.camelize.constantize
-      @subject_class    = arg_model_name.split('::').last
-      @scope_path       = @subject_class.pluralize.underscore.downcase
-      @fields           = contract_fields
-      @uploaders        = uploaders
-      setup_mappings
+    def validation!
+      unless File.exist?('config/initializers/rider_kick.rb')
+        say 'Error must create init configuration for rider_kick!'
+        raise Thor::Error, 'run: bin/rails generate rider_kick:init'
+      end
     end
 
-    def setup_mappings
+    def setup_variables
+      config     = YAML.load_file("db/structures/#{arg_structure}_structure.yaml")
+      @structure = Hashie::Mash.new(config)
+
+      # Mengambil detail konfigurasi
+      model_name    = @structure.model
+      resource_name = @structure.resource_name.singularize.underscore.downcase
+      entity        = @structure.entity || {}
+
+      @actor                = @structure.actor
+      @uploaders            = @structure.uploaders || []
+      @search_able          = @structure.search_able || []
+      @services             = @structure.services || {}
+      @contract_list        = @services.action_list.contract || []
+      @contract_fetch_by_id = @services.action_fetch_by_id.contract || []
+      @contract_create      = @services.action_create.contract || []
+      @contract_update      = @services.action_update.contract || []
+      @contract_destroy     = @services.action_destroy.contract || []
+      @skipped_fields       = entity.skipped_fields || []
+      @custom_fields        = entity.custom_fields || []
+
+      @variable_subject = model_name.split('::').last.underscore.downcase
+      @scope_path       = resource_name.pluralize.underscore.downcase
+      @model_class      = model_name.camelize.constantize
+      @subject_class    = resource_name.camelize
+      @fields           = contract_fields
+
       @type_mapping = {
         'uuid'     => ':string',
         'string'   => ':string',
@@ -73,17 +97,15 @@ module RiderKick
     end
 
     def contract_fields
-      skip_contract_fields = arg_settings['skip_contract'].split(',').map(&:strip)
-      @model_class.columns.reject { |column| (%w[id created_at updated_at type] + skip_contract_fields).include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      skip_contract_fields = @skipped_fields.map(&:strip).uniq
+      if RiderKick.scope_owner_column[:active].eql?(true)
+        skip_contract_fields << RiderKick.scope_owner_column[:column].to_s
+      end
+      @model_class.columns.reject { |column| skip_contract_fields.include?(column.name.to_s) }.map(&:name).map(&:to_s)
     end
 
     def get_column_type(field)
-      uploaders.include?(field) ? 'upload' : @model_class.columns_hash[field].type
-    end
-
-    def uploaders
-      return [] unless arg_settings['uploader_filed'].present?
-      arg_settings['uploader_filed'].split(',').map(&:strip)
+      @uploaders.include?(field) ? 'upload' : @model_class.columns_hash[field.to_s].type
     end
 
     def root_path_app
@@ -91,7 +113,7 @@ module RiderKick
     end
 
     def build_usecase_filename(action, suffix = '')
-      "#{arg_settings['actor'].downcase}_#{action}_#{@variable_subject}#{suffix}"
+      "#{@actor}_#{action}_#{@variable_subject}#{suffix}"
     end
 
     def build_repository_filename(action, suffix = '')

@@ -9,7 +9,7 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class%> < Core::R
   def call(builder: true)
     resources = <%= @model_class %>
     if @search.present?
-      # resources = resources.where('LOWER(caption) LIKE ?', "%#{@search.downcase}%")
+      resources = resources.where('<%= @search_able.map { |field| "LOWER(#{field}) LIKE :search" }.join(' OR ')%>', search: "%#{search}%")
     end
     return Success [] unless resources.present?
     pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)

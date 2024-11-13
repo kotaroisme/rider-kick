@@ -9,7 +9,9 @@ class Core::UseCases::Contract::Default
 
   def default
     Dry::Schema.Params do
-      # required(:organization_id).filled(:string)
+<% if RiderKick.scope_owner_column[:active].eql?(true)-%>
+      required(:RiderKick.scope_owner_column[:column]).filled(:string)
+<% end-%>
     end
   end
 end

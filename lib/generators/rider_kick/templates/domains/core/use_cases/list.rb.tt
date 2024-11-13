@@ -3,6 +3,9 @@
 class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
   contract do
     params(Core::UseCases::Contract::Default.new.call, Core::UseCases::Contract::Pagination.new.call) do
+<% @contract_list.each do |field| -%>
+      <%= field %>
+<% end -%>
     end
   end
   # Set specific return monads at method 'result'

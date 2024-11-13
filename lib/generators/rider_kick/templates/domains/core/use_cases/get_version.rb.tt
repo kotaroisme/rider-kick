@@ -6,7 +6,7 @@ class Core::UseCases::GetVersion < RiderKick::UseCases::AbstractUseCase
       # required(:version).filled(:string)
     end
   end
-  include Dry::Monads[:result]
+  # Set specific return monads at method 'result'
   include Dry::Monads::Do.for(:result)
 
   def result

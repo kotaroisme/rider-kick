@@ -3,19 +3,12 @@
 class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
   contract do
     params(Core::UseCases::Contract::Default.new.call) do
-      required(:id).filled(:string)
-<% (@fields + @uploaders).each do |field| -%>
-<% column_type = get_column_type(field) -%>
-<% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
-<% if @uploaders.include?(field) -%>
-      optional(:<%= field %>).maybe(<%= dry_type %>)
-<% else -%>
-      optional(:<%= field %>).maybe(<%= dry_type %>)
-<% end -%>
+<% @contract_update.each do |field| -%>
+      <%= field %>
 <% end -%>
     end
   end
-
+  # Set specific return monads at method 'result'
   include Dry::Monads::Do.for(:result)
 
   def result

@@ -1,0 +1,70 @@
+model: <%= @model_class %>
+resource_name: <%= @scope_path %>
+actor: <%= @actor %>
+fields:
+<% @model_class.columns.each do |field| -%>
+  - <%= field.name.to_s %>
+<% end -%>
+uploaders:
+<% @uploaders.each do |field| -%>
+  - <%= field %>
+<% end -%>
+search_able:
+<% contract_fields.each do |field| -%>
+<% if ['title', 'name'].include?(field) -%>
+  - <%= field %>
+<% end -%>
+<% end -%>
+services:
+  - action_list:
+    is_auth: true
+    is_skip_endpoint: false
+    use_case_class: <%= "#{@actor}_list_#{@variable_subject}".camelize %>
+    contract:
+  - action_fetch_by_id:
+    is_auth: true
+    is_skip_endpoint: false
+    use_case_class: <%= "#{@actor}_fetch_#{@variable_subject}_by_id".camelize %>
+    contract:
+      - required(:id).filled(:string)
+  - action_create:
+    is_auth: true
+    is_skip_endpoint: false
+    use_case_class: <%= "#{@actor}_create_#{@variable_subject}".camelize %>
+    contract:
+<% (@fields + @uploaders).each do |field| -%>
+  <% column_type = get_column_type(field) -%>
+  <% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
+<% if @uploaders.include?(field) -%>
+  - optional(:<%= field %>).maybe(<%= dry_type %>)
+<% else -%>
+  - required(:<%= field %>).filled(<%= dry_type %>)
+<% end -%>
+<% end -%>
+  - action_update:
+    is_auth: true
+    is_skip_endpoint: false
+    use_case_class: <%= "#{@actor}_update_#{@variable_subject}".camelize %>
+    contract:
+      - required(:id).filled(:string)
+<% (@fields + @uploaders).each do |field| -%>
+<% column_type = get_column_type(field) -%>
+<% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
+<% if @uploaders.include?(field) -%>
+      - optional(:<%= field %>).maybe(<%= dry_type %>)
+<% else -%>
+      - optional(:<%= field %>).maybe(<%= dry_type %>)
+<% end -%>
+<% end -%>
+  - action_destroy:
+    is_auth: true
+    is_skip_endpoint: false
+    use_case_class: <%= "#{@actor}_destroy_#{@variable_subject}".camelize %>
+    contract:
+      - required(:id).filled(:string)
+entity:
+  skipped_fields:
+    - id
+    - created_at
+    - updated_at
+    - type

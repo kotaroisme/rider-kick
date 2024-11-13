@@ -3,7 +3,9 @@
 class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
   contract do
     params(Core::UseCases::Contract::Default.new.call) do
-      required(:id).filled(:string)
+<% @contract_destroy.each do |field| -%>
+      <%= field %>
+<% end -%>
     end
   end
   # Set specific return monads at method 'result'
