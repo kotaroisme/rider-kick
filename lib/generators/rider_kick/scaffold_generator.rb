@@ -98,8 +98,8 @@ module RiderKick
 
     def contract_fields
       skip_contract_fields = @skipped_fields.map(&:strip).uniq
-      if RiderKick.scope_owner_column[:active].eql?(true)
-        skip_contract_fields << RiderKick.scope_owner_column[:column].to_s
+      if RiderKick.scope_owner_column.present?
+        skip_contract_fields << RiderKick.scope_owner_column.to_s
       end
       @model_class.columns.reject { |column| skip_contract_fields.include?(column.name.to_s) }.map(&:name).map(&:to_s)
     end

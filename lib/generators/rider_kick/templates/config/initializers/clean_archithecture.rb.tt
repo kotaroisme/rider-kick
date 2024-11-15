@@ -1,0 +1,10 @@
+# typed: ignore
+# frozen_string_literal: true
+
+require 'dry/monads/all'
+require 'dry-types'
+module Types
+  include Dry.Types()
+    File = Types.Instance(::File) | Types.Instance(ActionDispatch::Http::UploadedFile) | Types.Instance(Rack::Test::UploadedFile)
+  public_constant :File
+end

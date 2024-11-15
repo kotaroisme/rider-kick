@@ -1,0 +1,14 @@
+Rails.application.config.generators do |gs|
+  gs.orm :active_record, primary_key_type: :uuid
+  gs.fixture_replacement :factory_bot
+  gs.assets          = false
+  gs.helper          = false
+  gs.test_framework :rspec,
+                    fixtures:         false,
+                    view_specs:       false,
+                    model_specs:      false,
+                    helper_specs:     false,
+                    routing_specs:    false,
+                    request_specs:    false,
+                    controller_specs: false
+end

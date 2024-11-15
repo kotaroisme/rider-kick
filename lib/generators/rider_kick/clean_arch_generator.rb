@@ -22,10 +22,17 @@ module RiderKick
       setup_gitignore
       setup_rubocop
       setup_init_migration
+      setup_active_storage
+      setup_rspec
       setup_readme
     end
 
     private
+
+    def setup_active_storage
+      run 'rails active_storage:install'
+      run 'rails db:migrate'
+    end
 
     def validation!
       unless File.exist?('config/initializers/rider_kick.rb')
@@ -61,9 +68,12 @@ module RiderKick
     end
 
     def setup_initializers
+      copy_initializer('clean_archithecture')
+      copy_initializer('generators')
       copy_initializer('hashie')
-      copy_initializer('types')
       copy_initializer('version')
+      copy_initializer('zeitwerk')
+      copy_initializer('pagy')
     end
 
     def setup_dotenv
@@ -104,6 +114,16 @@ module RiderKick
     end
 
     def gem_dependencies
+      inject_into_file 'Gemfile', after: "group :development, :test do\n" do
+        <<-CONFIG
+
+  gem "byebug"
+  gem "rspec-rails"
+  gem "factory_bot_rails"
+  gem "shoulda-matchers"
+        CONFIG
+      end
+
       <<~RUBY
 
         # Env Variables
@@ -111,7 +131,26 @@ module RiderKick
 
         # Objectable
         gem 'hashie'
+
+        # uploading
+        gem 'image_processing', '>= 1.2'
+        gem 'ruby-vips'
+
+        # pagination
+        gem 'pagy', '~> 9.2'
       RUBY
+    end
+
+    def setup_rspec
+      say 'Menjalankan bundle install...'
+      run 'bundle install'
+      say 'Menginisialisasi RSpec...'
+      run 'rails generate rspec:install'
+      template '.rspec', File.join('.rspec')
+      template 'spec/support/repository_stubber.rb', File.join('spec/support/repository_stubber.rb')
+      template 'spec/support/file_stuber.rb', File.join('spec/support/file_stuber.rb')
+      say 'Mengonfigurasi FactoryBot...'
+      template 'spec/rails_helper.rb', File.join('spec/rails_helper.rb')
     end
 
     def path_app

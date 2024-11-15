@@ -1,0 +1,13 @@
+# encoding: utf-8
+# frozen_string_literal: true
+
+# Optionally override some pagy default with your own in the pagy initializer
+Pagy::DEFAULT[:limit] = 30 # items per page
+Pagy::DEFAULT[:size]  = 9  # nav bar links
+# Better user experience handled automatically
+require 'pagy/extras/overflow'
+Pagy::DEFAULT[:overflow] = :empty_page
+require 'pagy/extras/elasticsearch_rails'
+require 'pagy/extras/array'
+
+include Pagy::Backend

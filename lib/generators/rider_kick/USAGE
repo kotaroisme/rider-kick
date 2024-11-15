@@ -2,6 +2,9 @@ Description:
      Clean Architecture generator
 
 Example:
+    To Generate Init:
+        bin/rails  generate rider_kick:init
+
     To Generate Pattern:
         bin/rails  generate rider_kick:clean_arch --setup
 

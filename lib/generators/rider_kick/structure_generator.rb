@@ -60,7 +60,7 @@ module RiderKick
     end
 
     def contract_fields
-      @model_class.columns.reject { |column| (['id', 'created_at', 'updated_at', 'type'] + [RiderKick.scope_owner_column[:column].to_s]).include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      @model_class.columns.reject { |column| (['id', 'created_at', 'updated_at', 'type'] + [RiderKick.scope_owner_column.to_s]).include?(column.name.to_s) }.map(&:name).map(&:to_s)
     end
 
     def get_column_type(field)

@@ -16,21 +16,15 @@ search_able:
 <% end -%>
 <% end -%>
 services:
-  - action_list:
-    is_auth: true
-    is_skip_endpoint: false
-    use_case_class: <%= "#{@actor}_list_#{@variable_subject}".camelize %>
+  action_list:
     contract:
-  - action_fetch_by_id:
+  action_fetch_by_id:
     is_auth: true
     is_skip_endpoint: false
     use_case_class: <%= "#{@actor}_fetch_#{@variable_subject}_by_id".camelize %>
     contract:
       - required(:id).filled(:string)
-  - action_create:
-    is_auth: true
-    is_skip_endpoint: false
-    use_case_class: <%= "#{@actor}_create_#{@variable_subject}".camelize %>
+  action_create:
     contract:
 <% (@fields + @uploaders).each do |field| -%>
   <% column_type = get_column_type(field) -%>
@@ -41,10 +35,7 @@ services:
   - required(:<%= field %>).filled(<%= dry_type %>)
 <% end -%>
 <% end -%>
-  - action_update:
-    is_auth: true
-    is_skip_endpoint: false
-    use_case_class: <%= "#{@actor}_update_#{@variable_subject}".camelize %>
+  action_update:
     contract:
       - required(:id).filled(:string)
 <% (@fields + @uploaders).each do |field| -%>
@@ -56,10 +47,7 @@ services:
       - optional(:<%= field %>).maybe(<%= dry_type %>)
 <% end -%>
 <% end -%>
-  - action_destroy:
-    is_auth: true
-    is_skip_endpoint: false
-    use_case_class: <%= "#{@actor}_destroy_#{@variable_subject}".camelize %>
+  action_destroy:
     contract:
       - required(:id).filled(:string)
 entity:
