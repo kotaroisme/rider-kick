@@ -22,26 +22,17 @@ And then execute:
 ## Usage
 ```bash
 Description:
-Clean Architecture generator
+     Clean Architecture generator
 
 Example:
-    To Generate Structure:
-        bin/rails  generate rider_kick:clean_arch --setup
+    To Generate Init:
+        bin/rails  generate rider_kick:init
 
-        To undo:
-           bin/rails destroy rider_kick:clean_arch --setup
+    To Generate Pattern:
+        bin/rails  generate rider_kick:clean_arch --setup
 
     To Generate scaffold:
         bin/rails  generate rider_kick:scaffold Models::Contact actor:user
-
-        To undo:
-           bin/rails destroy rider_kick:scaffold Models::Contact actor:user
-
-    To Generate Domain:
-        bin/rails  generate rider_kick:blank actor:user action:create scope:Contact --use_case --repository --builder --entity
-
-        To undo:
-           bin/rails destroy rider_kick:blank actor:user action:create scope:Contact --use_case --repository --builder --entity
 
 ```
 
