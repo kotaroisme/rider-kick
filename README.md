@@ -12,11 +12,13 @@ gem 'rider-kick'
 ```
 
 And then execute:
+```bash
     $ rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
     $ bundle install
     $ rails generate rider_kick:init
     $ rails generate rider_kick:clean_arch --setup
     $ rails db:drop db:create db:migrate db:seed
+```
 
 ## Usage
 ```bash
