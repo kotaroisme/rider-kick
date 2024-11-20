@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::UseCases::<%= @scope_class %>::<%= @use_case_class %> < RiderKick::UseCases::AbstractUseCase
+class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].join("::") %> < RiderKick::UseCases::AbstractUseCase
   contract do
     params(Core::UseCases::Contract::Default.new.call, Core::UseCases::Contract::Pagination.new.call) do
 <% @contract_list.each do |field| -%>

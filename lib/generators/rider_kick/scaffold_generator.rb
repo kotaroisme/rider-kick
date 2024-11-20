@@ -39,22 +39,25 @@ module RiderKick
       @actor                = @structure.actor
       @uploaders            = @structure.uploaders || []
       @search_able          = @structure.search_able || []
-      @services             = @structure.services || {}
-      @contract_list        = @services.action_list.contract || []
-      @contract_fetch_by_id = @services.action_fetch_by_id.contract || []
-      @contract_create      = @services.action_create.contract || []
-      @contract_update      = @services.action_update.contract || []
-      @contract_destroy     = @services.action_destroy.contract || []
+      @services             = @structure.domains || {}
+      @contract_list        = @services.action_list.use_case.contract || []
+      @contract_fetch_by_id = @services.action_fetch_by_id.use_case.contract || []
+      @contract_create      = @services.action_create.use_case.contract || []
+      @contract_update      = @services.action_update.use_case.contract || []
+      @contract_destroy     = @services.action_destroy.use_case.contract || []
       @skipped_fields       = entity.skipped_fields || []
       @custom_fields        = entity.custom_fields || []
 
       @variable_subject = model_name.split('::').last.underscore.downcase
       @scope_path       = resource_name.pluralize.underscore.downcase
+      @scope_class      = @scope_path.camelize
       @model_class      = model_name.camelize.constantize
       @subject_class    = resource_name.camelize
       @fields           = contract_fields
+      @route_scope_path = @structure.controllers.route_scope.downcase rescue ''
+      @route_scope_class = @route_scope_path.camelize rescue ''
 
-      @type_mapping = {
+      @type_mapping        = {
         'uuid'     => ':string',
         'string'   => ':string',
         'text'     => ':string',
@@ -83,11 +86,10 @@ module RiderKick
       use_case_filename   = build_usecase_filename(action, suffix)
       repository_filename = build_repository_filename(action, suffix)
 
-      @scope_class      = @scope_path.camelize
       @use_case_class   = use_case_filename.camelize
       @repository_class = repository_filename.camelize
 
-      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/use_cases/#{@scope_path}", "#{use_case_filename}.rb")
+      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/use_cases/", @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
       template "domains/core/repositories/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/repositories/#{@scope_path}", "#{repository_filename}.rb")
     end
 

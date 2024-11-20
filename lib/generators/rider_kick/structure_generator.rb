@@ -3,7 +3,7 @@ module RiderKick
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
-    argument :arg_settings, type: :hash, default: '', banner: 'actor:user uploader_filed:assets,images,picture,document'
+    argument :arg_settings, type: :hash, default: '', banner: 'route_scope:dashboard actor:user uploader_filed:assets,images,picture,document'
 
     def generate_use_case
       validation!
@@ -21,16 +21,18 @@ module RiderKick
     end
 
     def setup_variables
-      @variable_subject = arg_model_name.split('::').last.underscore.downcase
-      @model_class      = arg_model_name.camelize.constantize
-      @subject_class    = arg_model_name.split('::').last
-      @scope_path       = @subject_class.pluralize.underscore.downcase
-      @scope_class      = @scope_path.camelize
-      @fields           = contract_fields
-      @uploaders        = uploaders
-      @actor            = arg_settings['actor'].downcase
+      @variable_subject  = arg_model_name.split('::').last.underscore.downcase
+      @model_class       = arg_model_name.camelize.constantize
+      @subject_class     = arg_model_name.split('::').last
+      @scope_path        = @subject_class.pluralize.underscore.downcase
+      @scope_class       = @scope_path.camelize
+      @fields            = contract_fields
+      @uploaders         = uploaders
+      @actor             = arg_settings['actor'].downcase
+      @route_scope_path  = arg_settings['route_scope'].downcase
+      @route_scope_class = @route_scope_path.camelize
 
-      @type_mapping = {
+      @type_mapping        = {
         'uuid'     => ':string',
         'string'   => ':string',
         'text'     => ':string',

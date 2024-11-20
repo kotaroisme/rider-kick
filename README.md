@@ -12,18 +12,18 @@ gem 'rider-kick'
 ```
 
 And then execute:
-
+    $ rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
     $ bundle install
-    $ bundle binstubs rider-kick
+    $ rails generate rider_kick:init
     $ rails generate rider_kick:clean_arch --setup
     $ rails db:drop db:create db:migrate db:seed
-    $ rubocop -a
 
 ## Usage
 ```bash
 Description:
      Clean Architecture generator
-
+     rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
+     
 Example:
     To Generate Init:
         bin/rails  generate rider_kick:init
@@ -46,20 +46,25 @@ This structure provides helper interfaces and classes to assist in the construct
 
 ```
 - app
-  - services
-    - api
+  - models
+    - models
       - ...
   - domains 
-    - entities (Contract Response)
-    - builder
-    - repositories (Business logic)
-    - use_cases (Just Usecase)
-    - utils (Class Reusable)
+    - core
+      ...
+        - entities (Contract Response)
+        - builder
+        - repositories (Business logic)
+        - use_cases (Just Usecase)
+        - utils (Class Reusable)
 ```
 ## Screaming architecture - use cases as an organisational principle
 Uncle Bob suggests that your source code organisation should allow developers to easily find a listing of all use cases your application provides. Here's an example of how this might look in a this application.
 ```
 - app
+  - models
+    - models
+      - ...
   - domains 
     - core
       ...
