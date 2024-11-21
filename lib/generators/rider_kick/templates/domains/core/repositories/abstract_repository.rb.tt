@@ -40,7 +40,7 @@ class Core::Repositories::AbstractRepository
   end
 
   def paginate!(pagy)
-    Core::Builders::Pagination.new(Hashie::Mash.new(pagy.as_json)).build
+    Core::Builders::Pagination.new(pagy).build
   end
 
   def build_pagination_variable!(params)

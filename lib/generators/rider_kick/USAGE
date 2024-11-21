@@ -1,12 +1,9 @@
 Description:
      Clean Architecture generator
+     rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
 
 Example:
-    To Generate Init:
-        bin/rails  generate rider_kick:init
-
-    To Generate Pattern:
-        bin/rails  generate rider_kick:clean_arch --setup
-
     To Generate scaffold:
-        bin/rails  generate rider_kick:scaffold Models::Contact actor:user
+        bin/rails generate rider_kick:clean_arch --setup
+        bin/rails generate rider_kick:structure Models::User actor:owner
+        bin/rails generate rider_kick:scaffold users scope:dashboard

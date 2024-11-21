@@ -4,9 +4,7 @@
 ```bash
 $ cp env.example .env.development
 $ bundle install
-$ rails db:create
-$ rails db:migrate
-$ rails db:seed
+$ rails db:drop db:create db:migrate  db:seed
 ```
 ### Run Server
 ```bash

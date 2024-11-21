@@ -4,6 +4,7 @@ module RiderKick
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_structure, type: :string, default: '', banner: ''
+    argument :arg_scope, type: :hash, default: '', banner: 'scope:dashboard'
 
     def generate_use_case
       validation!
@@ -21,9 +22,9 @@ module RiderKick
     private
 
     def validation!
-      unless File.exist?('config/initializers/rider_kick.rb')
-        say 'Error must create init configuration for rider_kick!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:init'
+      unless Dir.exist?('app/domains')
+        say 'Error must create clean arch structure first!'
+        raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
       end
     end
 
@@ -54,7 +55,7 @@ module RiderKick
       @model_class      = model_name.camelize.constantize
       @subject_class    = resource_name.camelize
       @fields           = contract_fields
-      @route_scope_path = @structure.controllers.route_scope.downcase rescue ''
+      @route_scope_path = arg_scope['scope'].to_s.downcase rescue ''
       @route_scope_class = @route_scope_path.camelize rescue ''
 
       @type_mapping        = {
@@ -100,8 +101,8 @@ module RiderKick
 
     def contract_fields
       skip_contract_fields = @skipped_fields.map(&:strip).uniq
-      if RiderKick.scope_owner_column.present?
-        skip_contract_fields << RiderKick.scope_owner_column.to_s
+      if @scope_owner_column.present?
+        skip_contract_fields << @scope_owner_column.to_s
       end
       @model_class.columns.reject { |column| skip_contract_fields.include?(column.name.to_s) }.map(&:name).map(&:to_s)
     end

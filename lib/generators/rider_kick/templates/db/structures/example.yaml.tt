@@ -5,6 +5,9 @@ fields:
 <% @model_class.columns.each do |field| -%>
   - <%= field.name.to_s %>
 <% end -%>
+<% @uploaders.each do |field| -%>
+  - <%= field %>
+<% end -%>
 uploaders:
 <% @uploaders.each do |field| -%>
   - <%= field %>
@@ -16,7 +19,6 @@ search_able:
 <% end -%>
 <% end -%>
 controllers:
-  route_scope: <%= @route_scope_path %>
   list_fields:
 <% @fields.each do |field| -%>
     - <%= field %>
@@ -25,31 +27,27 @@ controllers:
 <% @model_class.columns.each do |field| -%>
     - <%= field.name.to_s %>
 <% end -%>
-  form_fields:
-<% (@fields + @uploaders).each do |field| -%>
+<% @uploaders.each do |field| -%>
     - <%= field %>
+<% end -%>
+  form_fields:
+<% (@fields).each do |field| -%>
+    - name: <%= field %>
+      type: string
+<% end -%>
+<% (@uploaders).each do |field| -%>
+    - name: <%= field %>
+      type: file
 <% end -%>
 domains:
   action_list:
-    endpoint:
-      is_auth: true
-      is_skip: false
-      parameters:
     use_case:
       contract:
   action_fetch_by_id:
-    endpoint:
-      is_auth: true
-      is_skip: false
-      parameters:
     use_case:
       contract:
         - required(:id).filled(:string)
   action_create:
-    endpoint:
-      is_auth: true
-      is_skip: false
-      parameters:
     use_case:
       contract:
 <% (@fields + @uploaders).each do |field| -%>
@@ -62,10 +60,6 @@ domains:
 <% end -%>
 <% end -%>
   action_update:
-    endpoint:
-      is_auth: true
-      is_skip: false
-      parameters:
     use_case:
       contract:
         - required(:id).filled(:string)
@@ -79,10 +73,6 @@ domains:
 <% end -%>
 <% end -%>
   action_destroy:
-    endpoint:
-      is_auth: true
-      is_skip: false
-      parameters:
     use_case:
       contract:
         - required(:id).filled(:string)

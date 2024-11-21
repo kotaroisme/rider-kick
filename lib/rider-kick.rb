@@ -5,10 +5,7 @@ require 'rider_kick/builders/abstract_active_record_entity_builder'
 require 'rider_kick/matchers/use_case_result'
 require 'rider_kick/use_cases/abstract_use_case'
 require 'rider_kick/use_cases/contract'
-require 'rider_kick/configuration'
 require 'rider_kick/version'
 
 module RiderKick
-  extend RiderKick::Configuration
-  define_setting :scope_owner_column, ''
 end

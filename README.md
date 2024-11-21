@@ -15,9 +15,12 @@ And then execute:
 ```bash
     $ rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
     $ bundle install
-    $ rails generate rider_kick:init
+    $ bundle add rider-kick
+    $ bundle add sun-sword
     $ rails generate rider_kick:clean_arch --setup
     $ rails db:drop db:create db:migrate db:seed
+    $ rails generate rider_kick:structure Models::User actor:owner
+    $ rails generate rider_kick:scaffold users scope:dashboard
 ```
 
 ## Usage
@@ -27,14 +30,10 @@ Description:
      rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
      
 Example:
-    To Generate Init:
-        bin/rails  generate rider_kick:init
-
-    To Generate Pattern:
-        bin/rails  generate rider_kick:clean_arch --setup
-
     To Generate scaffold:
-        bin/rails  generate rider_kick:scaffold Models::Contact actor:user
+        bin/rails generate rider_kick:clean_arch --setup
+        bin/rails generate rider_kick:structure Models::User actor:owner
+        bin/rails generate rider_kick:scaffold users scope:dashboard
 
 ```
 

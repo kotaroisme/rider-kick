@@ -14,25 +14,24 @@ module RiderKick
     private
 
     def validation!
-      unless File.exist?('config/initializers/rider_kick.rb')
-        say 'Error must create init configuration for rider_kick!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:init'
+      unless Dir.exist?('app/domains')
+        say 'Error must create clean arch structure first!'
+        raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
       end
     end
 
     def setup_variables
-      @variable_subject  = arg_model_name.split('::').last.underscore.downcase
-      @model_class       = arg_model_name.camelize.constantize
-      @subject_class     = arg_model_name.split('::').last
-      @scope_path        = @subject_class.pluralize.underscore.downcase
-      @scope_class       = @scope_path.camelize
-      @fields            = contract_fields
-      @uploaders         = uploaders
-      @actor             = arg_settings['actor'].downcase
-      @route_scope_path  = arg_settings['route_scope'].downcase
-      @route_scope_class = @route_scope_path.camelize
+      @scope_owner_column = (SunSword.scope_owner_column.to_s rescue '')
+      @variable_subject   = arg_model_name.split('::').last.underscore.downcase
+      @model_class        = arg_model_name.camelize.constantize
+      @subject_class      = arg_model_name.split('::').last
+      @scope_path         = @subject_class.pluralize.underscore.downcase
+      @scope_class        = @scope_path.camelize
+      @fields             = contract_fields
+      @uploaders          = uploaders
+      @actor              = arg_settings['actor'].downcase
 
-      @type_mapping        = {
+      @type_mapping = {
         'uuid'     => ':string',
         'string'   => ':string',
         'text'     => ':string',
@@ -62,7 +61,7 @@ module RiderKick
     end
 
     def contract_fields
-      @model_class.columns.reject { |column| (['id', 'created_at', 'updated_at', 'type'] + [RiderKick.scope_owner_column.to_s]).include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      @model_class.columns.reject { |column| (['id', 'created_at', 'updated_at', 'type'] + [@scope_owner_column.to_s]).include?(column.name.to_s) }.map(&:name).map(&:to_s)
     end
 
     def get_column_type(field)

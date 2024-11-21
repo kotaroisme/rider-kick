@@ -6,7 +6,6 @@ module RiderKick
 
     def validate_setup_option
       raise Thor::Error, 'The --setup option must be specified to create the domain structure.' unless options.setup
-      validation!
     end
 
     def create_gem_dependencies
@@ -22,6 +21,7 @@ module RiderKick
       setup_gitignore
       setup_rubocop
       setup_init_migration
+      setup_models
       setup_active_storage
       setup_rspec
       setup_readme
@@ -32,13 +32,6 @@ module RiderKick
     def setup_active_storage
       run 'rails active_storage:install'
       run 'rails db:migrate'
-    end
-
-    def validation!
-      unless File.exist?('config/initializers/rider_kick.rb')
-        say 'Error must create init configuration for rider_kick!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:init'
-      end
     end
 
     def setup_domain_structure
@@ -104,6 +97,11 @@ module RiderKick
 
     def copy_database_config
       template 'config/database.yml', File.join('config/database.yml')
+    end
+
+    def setup_models
+      template 'models/application_record.rb', File.join('app/models/application_record.rb')
+      template 'models/models.rb', File.join('app/models/models.rb')
     end
 
     def copy_env_development

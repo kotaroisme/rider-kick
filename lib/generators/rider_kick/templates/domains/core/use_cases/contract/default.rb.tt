@@ -9,9 +9,9 @@ class Core::UseCases::Contract::Default
 
   def default
     Dry::Schema.Params do
-<% if RiderKick.scope_owner_column.present? -%>
-      required(:<%=RiderKick.scope_owner_column%> ).filled(:string)
-<% end-%>
+        if @scope_owner_column.present?
+          required(@scope_owner_column).filled(:string)
+        end
     end
   end
 end
