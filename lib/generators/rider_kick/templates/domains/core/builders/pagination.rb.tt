@@ -5,7 +5,7 @@ class Core::Builders::Pagination < RiderKick::Builders::AbstractActiveRecordEnti
 
   def attributes_for_entity
     {
-      total_count: params[:count],
+      total_count: params.count,
       page:        params.page,
       per_page:    params.limit,
       page_count:  params.last
