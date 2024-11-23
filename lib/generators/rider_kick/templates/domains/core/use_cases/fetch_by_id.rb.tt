@@ -4,11 +4,11 @@ class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].re
   contract do
     params(Core::UseCases::Contract::Default.new.call) do
 <% @contract_fetch_by_id.each do |field| -%>
-<% next if field.include?(":#{@resource_owner_id}") -%>
+<% next if field.eql?(":#{@resource_owner_id}") -%>
       <%= field %>
-<% end -%>
 <% if @resource_owner_id.present? -%>
       required(:<%= @resource_owner_id %>).filled(:string)
+<% end -%>
 <% end -%>
     end
   end

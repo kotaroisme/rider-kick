@@ -7,9 +7,9 @@ class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].re
 <%if field.include?(":#{@resource_owner_id}") -%>
 <% if @resource_owner_id.present? -%>
       required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
 <% else -%>
       <%= field %>
+<% end -%>
 <% end -%>
 <% end -%>
     end
