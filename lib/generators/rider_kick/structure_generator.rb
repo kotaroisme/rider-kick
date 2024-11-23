@@ -3,7 +3,7 @@ module RiderKick
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
-    argument :arg_settings, type: :hash, default: '', banner: 'route_scope:dashboard actor:user uploader_filed:assets,images,picture,document'
+    argument :arg_settings, type: :hash, default: '', banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
 
     def generate_use_case
       validation!
@@ -56,6 +56,10 @@ module RiderKick
       }
     end
 
+    def is_singular?(str)
+      str.singularize == str
+    end
+
     def generate_files(action)
       template 'db/structures/example.yaml.tt', File.join("db/structures/#{action}_structure.yaml")
     end
@@ -69,8 +73,8 @@ module RiderKick
     end
 
     def uploaders
-      return [] unless arg_settings['uploader_filed'].present?
-      arg_settings['uploader_filed'].split(',').map(&:strip)
+      return [] unless arg_settings['uploaders'].present?
+      arg_settings['uploaders'].split(',').map(&:strip)
     end
   end
 end

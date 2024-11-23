@@ -1,13 +1,17 @@
 # frozen_string_literal: true
 
 class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
-  def initialize(id:, params: {})
-    @id     = id
-    @params = prepare! params, sanitize: true
+  def initialize(params:)
+    @id     = params.id
+    @params = prepare! params.except(:id), sanitize: true
   end
 
   def call(builder: true)
+<% if @resource_owner_id.present? -%>
+    resource = <%= @model_class %>.find_by(id: @id, <%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
+<% else -%>
     resource = <%= @model_class %>.find_by(id: @id)
+<% end -%>
     return Failure '<%= @subject_class %> not found' unless resource.present?
 <% if @uploaders.present? -%>
     # Remove the existing images if a new one is being uploaded

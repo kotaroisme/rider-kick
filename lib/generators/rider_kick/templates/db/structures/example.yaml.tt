@@ -1,5 +1,6 @@
 model: <%= @model_class %>
 resource_name: <%= @scope_path %>
+resource_owner_id: <%= @resource_owner_id %>
 actor: <%= @actor %>
 fields:
 <% @model_class.columns.each do |field| -%>
@@ -36,8 +37,13 @@ controllers:
       type: string
 <% end -%>
 <% (@uploaders).each do |field| -%>
+<% if is_singular?(field) -%>
     - name: <%= field %>
       type: file
+<% else -%>
+    - name: <%= field %>
+      type: files
+<% end -%>
 <% end -%>
 domains:
   action_list:
@@ -54,7 +60,11 @@ domains:
   <% column_type = get_column_type(field) -%>
   <% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
 <% if @uploaders.include?(field) -%>
+<% if is_singular?(field) -%>
     - optional(:<%= field %>).maybe(<%= dry_type %>)
+<% else -%>
+    - optional(:<%= field %>).maybe(:array)
+<% end -%>
 <% else -%>
     - required(:<%= field %>).filled(<%= dry_type %>)
 <% end -%>
@@ -67,7 +77,11 @@ domains:
 <% column_type = get_column_type(field) -%>
 <% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
 <% if @uploaders.include?(field) -%>
+<% if is_singular?(field) -%>
         - optional(:<%= field %>).maybe(<%= dry_type %>)
+<% else -%>
+        - optional(:<%= field %>).maybe(:array)
+<% end -%>
 <% else -%>
         - optional(:<%= field %>).maybe(<%= dry_type %>)
 <% end -%>

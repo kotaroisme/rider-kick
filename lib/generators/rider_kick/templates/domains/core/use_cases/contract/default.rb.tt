@@ -9,9 +9,6 @@ class Core::UseCases::Contract::Default
 
   def default
     Dry::Schema.Params do
-        if SunSword.scope_owner_column.present?
-          required(SunSword.scope_owner_column).filled(:string)
-        end
     end
   end
 end

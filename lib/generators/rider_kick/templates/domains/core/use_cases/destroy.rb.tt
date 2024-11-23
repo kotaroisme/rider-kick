@@ -4,7 +4,11 @@ class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].re
   contract do
     params(Core::UseCases::Contract::Default.new.call) do
 <% @contract_destroy.each do |field| -%>
+<% next if field.include?(":#{@resource_owner_id}") -%>
       <%= field %>
+<% end -%>
+<% if @resource_owner_id.present? -%>
+      required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
     end
   end
@@ -13,6 +17,6 @@ class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].re
 
   def result
     params = yield build_parameter!
-    Core::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(id: params.id).call(builder: true)
+    Core::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(params: params).call(builder: true)
   end
 end

@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
 class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
-  def initialize(id:)
-    @id  = id
+  def initialize(params:)
+    @params = params
+    @id     = @params.id
   end
 
   def call(builder: true)
+<% if @resource_owner_id.present? -%>
+    resource = <%= @model_class %>.find_by(id: @id, <%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
+<% else -%>
     resource = <%= @model_class %>.find_by(id: @id)
+<% end -%>
     return Failure '<%= @subject_class %> not found' unless resource.present?
     Success Core::Builders::<%= @subject_class %>.new(resource).build
   end

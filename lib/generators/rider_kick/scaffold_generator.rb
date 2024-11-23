@@ -38,6 +38,7 @@ module RiderKick
       entity        = @structure.entity || {}
 
       @actor                = @structure.actor
+      @resource_owner_id    = @structure.resource_owner_id
       @uploaders            = @structure.uploaders || []
       @search_able          = @structure.search_able || []
       @services             = @structure.domains || {}
@@ -81,6 +82,10 @@ module RiderKick
         'date'     => 'Types::Strict::Date',
         'datetime' => 'Types::Strict::Time'
       }
+    end
+
+    def is_singular?(str)
+      str.singularize == str
     end
 
     def generate_files(action, suffix = '')
