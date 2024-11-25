@@ -1,0 +1,21 @@
+module ActionDispatch
+  module Routing
+    class Mapper
+      def create
+        [:new, :create]
+      end
+
+      def read
+        [:index, :show]
+      end
+
+      def update
+        [:edit, :update]
+      end
+
+      def destroy
+        [:destroy]
+      end
+    end
+  end
+end

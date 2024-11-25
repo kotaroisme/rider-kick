@@ -67,6 +67,7 @@ module RiderKick
       copy_initializer('version')
       copy_initializer('zeitwerk')
       copy_initializer('pagy')
+      copy_initializer('route_extensions')
     end
 
     def setup_dotenv
