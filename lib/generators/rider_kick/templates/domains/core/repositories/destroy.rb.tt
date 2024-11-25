@@ -2,7 +2,8 @@
 
 class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
   def initialize(params:)
-    @id  = params.id
+    @params = params
+    @id     = @params.id
   end
 
   def call(builder: true)

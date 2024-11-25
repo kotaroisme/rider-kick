@@ -16,6 +16,7 @@ module RiderKick
       generate_files('destroy')
       generate_files('fetch', '_by_id')
 
+      set_uploader_in_model
       copy_builder_and_entity_files
     end
 
@@ -53,8 +54,9 @@ module RiderKick
       @variable_subject = model_name.split('::').last.underscore.downcase
       @scope_path       = resource_name.pluralize.underscore.downcase
       @scope_class      = @scope_path.camelize
+      @scope_subject    = @scope_path.singularize
       @model_class      = model_name.camelize.constantize
-      @subject_class    = resource_name.camelize
+      @subject_class    = @variable_subject.camelize
       @fields           = contract_fields
       @route_scope_path = arg_scope['scope'].to_s.downcase rescue ''
       @route_scope_class = @route_scope_path.camelize rescue ''
@@ -86,6 +88,16 @@ module RiderKick
 
     def is_singular?(str)
       str.singularize == str
+    end
+
+    def set_uploader_in_model
+      @uploaders.each do |uploader|
+        method_strategy = 'has_many_attached'
+        if is_singular?(uploader)
+          method_strategy = 'has_one_attached'
+        end
+        inject_into_file File.join("#{root_path_app}/models", @model_class.to_s.split('::').first.downcase.to_s, "#{@variable_subject}.rb"), "  #{method_strategy} :#{uploader}, dependent: :purge\n", after: "class #{@model_class} < ApplicationRecord\n"
+      end
     end
 
     def generate_files(action, suffix = '')

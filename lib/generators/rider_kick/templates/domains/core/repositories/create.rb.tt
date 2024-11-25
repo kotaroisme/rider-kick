@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
-  def initialize(params: {})
+  def initialize(params:)
     @params     = prepare! params, sanitize: true
   end
 

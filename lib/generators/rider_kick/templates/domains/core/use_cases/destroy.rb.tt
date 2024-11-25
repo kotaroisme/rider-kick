@@ -3,12 +3,14 @@
 class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %> < RiderKick::UseCases::AbstractUseCase
   contract do
     params(Core::UseCases::Contract::Default.new.call) do
+      required(:id).filled(:string)
 <% @contract_destroy.each do |field| -%>
-<% next if field.eql?(":#{@resource_owner_id}") -%>
+<% next if field.include?("#{@resource_owner_id}") && @resource_owner_id.present? -%>
+<% next if field.include?("(:id)") -%>
       <%= field %>
+<% end -%>
 <% if @resource_owner_id.present? -%>
       required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
 <% end -%>
     end
   end

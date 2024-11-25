@@ -15,7 +15,7 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class%> < Core::R
     if @search.present?
       resources = resources.where('<%= @search_able.map { |field| "LOWER(#{field}) LIKE :search" }.join(' OR ')%>', search: "%#{search}%")
     end
-    return Success Success Hashie::Mash.new(response: [], meta: {}) unless resources.present?
+    return Success Hashie::Mash.new(response: [], meta: {}) unless resources.present?
     pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
     response      = results.map { |result| Core::Builders::<%= @subject_class %>.new(result).build }
     Success Hashie::Mash.new(response: response, meta: paginate!(pagy))
