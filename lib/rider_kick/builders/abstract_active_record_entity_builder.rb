@@ -27,12 +27,12 @@ module RiderKick
         private :entity_class
       end
 
-      def self.has_many(relation_name, use:)
-        @has_many_builders << [relation_name, use]
+      def self.has_many(relation_name, attribute_as: nil, use:)
+        @has_many_builders << [attribute_as, relation_name, use]
       end
 
-      def self.belongs_to(relation_name, use:)
-        @belongs_to_builders << [relation_name, use]
+      def self.belongs_to(relation_name, attribute_as: nil, use:)
+        @belongs_to_builders << [attribute_as, relation_name, use]
       end
 
       # @param [ActiveRecord::Base] An ActiveRecord model to map to the entity
@@ -86,11 +86,11 @@ module RiderKick
 
       def attributes_for_belongs_to_relations
         self.class.belongs_to_builders.map do |belongs_to_builder_config|
-          relation_name, builder_class = belongs_to_builder_config
-          relation                     = @params.public_send(relation_name)
+          attribute, relation_name, builder_class = belongs_to_builder_config
+          relation                                = @params.public_send(relation_name)
 
           [
-            relation_name,
+            attribute || relation_name,
             relation ? builder_class.new(relation).build : nil
           ]
         end.to_h
@@ -98,14 +98,14 @@ module RiderKick
 
       def attributes_for_has_many_relations
         self.class.has_many_builders.map do |has_many_builder_config|
-          relation_name, builder_class = has_many_builder_config
-          relations                    = @params.public_send(relation_name)
-          built_relations              = relations.map do |relation|
+          attribute, relation_name, builder_class = has_many_builder_config
+          relations                               = @params.public_send(relation_name)
+          built_relations                         = relations.map do |relation|
             builder_class.new(relation).build
           end
 
           [
-            relation_name,
+            attribute || relation_name,
             built_relations
           ]
         end.to_h
