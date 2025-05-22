@@ -16,13 +16,16 @@ And then execute:
     $ rails new kotaro_minami -d=postgresql -T --skip-javascript --skip-asset-pipeline
     $ bundle install
     $ bundle add rider-kick
-    $ bundle add sun-sword
     $ rails generate rider_kick:clean_arch --setup
     $ rails db:drop db:create db:migrate db:seed
-    $ rails generate rider_kick:structure Models::User actor:owner
-    $ rails generate rider_kick:scaffold users scope:dashboard
+    $ rails g model models/products name price:decimal is_published:boolean 
+    $ rails generate rider_kick:structure Models::Product actor:owner
+    $ rails generate rider_kick:scaffold products scope:dashboard 
 ```
-
+### OPTIONAL
+```bash
+    $ bundle add sun-sword
+```
 ## Usage
 ```bash
 Description:

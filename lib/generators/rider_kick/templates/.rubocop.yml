@@ -20,10 +20,8 @@ AllCops:
     - 'db/**/*'
     - 'config/**/*'
     - 'script/**/*'
-    - 'bin/*'
     - 'public/views/*'
     - 'bin/**/*'
-    - 'db/**/*'
     - 'tmp/**/*'
     - 'spec/spec_helper.rb'
     - 'spec/rails_helper.rb'
@@ -67,7 +65,7 @@ Gemspec/OrderedDependencies:
 Layout/AccessModifierIndentation:
   Enabled: true
   EnforcedStyle: indent
-  IndentationWidth: ~
+  IndentationWidth: 2
 
 Layout/ArgumentAlignment:
   Enabled: true
@@ -524,9 +522,6 @@ Lint/ShadowedException:
   Enabled: true
 
 Lint/RedundantStringCoercion:
-  Enabled: true
-
-Lint/Syntax:
   Enabled: true
 
 Lint/UnderscorePrefixedVariableName:

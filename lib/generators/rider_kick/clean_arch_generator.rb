@@ -116,7 +116,6 @@ module RiderKick
       inject_into_file 'Gemfile', after: "group :development, :test do\n" do
         <<-CONFIG
 
-  gem "byebug"
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "shoulda-matchers"
