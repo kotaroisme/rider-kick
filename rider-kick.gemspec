@@ -1,47 +1,68 @@
 # frozen_string_literal: true
 
+# rider-kick.gemspec
 require_relative "lib/rider_kick/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "rider-kick"
-  spec.version = RiderKick::VERSION
-  spec.authors = ["Kotaro Minami"]
-  spec.email = ["kotaroisme@gmail.com"]
+  spec.name          = "rider-kick"
+  spec.version       = RiderKick::VERSION
+  spec.authors       = ["Kotaro Minami"]
+  spec.email         = ["kotaroisme@gmail.com"]
 
-  spec.summary = "Clean Architecture Framework."
-  spec.description = "An attempt at building a reusable Clean Architecture framework for Ruby."
-  spec.homepage = "https://github.com/kotaroisme/rider-kick"
-  spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.0.0"
+  spec.summary       = "Clean Architecture generator for Ruby/Rails apps."
+  spec.description   = "Rider Kick: opinionated generator to scaffold Clean Architecture (entities, use-cases, adapters) with Rails-friendly ergonomics."
+  spec.homepage      = "https://github.com/kotaroisme/rider-kick"
+  spec.license       = "MIT"
 
-  # Specify which files should be added to the gem when it is released.
-  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  gemspec = File.basename(__FILE__)
-  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
-    ls.readlines("\x0", chomp: true).reject do |f|
-      (f == gemspec) ||
-        f.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile])
-    end
-  end
-  spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.required_ruby_version = ">= 3.2" # naikkan jika kamu ready; kalau ragu tetap 3.1
+
+  # File list (pastikan templates generator ikut terkirim)
+  # Gunakan git ls-files untuk rilis via git agar presisi:
+  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) { |io|
+    io.read.split("\x0").select { |f|
+      f.start_with?("lib/", "exe/", "README", "CHANGELOG", "LICENSE")
+    }
+  }
+  spec.bindir        = "exe"
+  spec.executables   = Dir["exe/*"].map { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  # Uncomment to register a new dependency of your gem
-  # spec.add_dependency "example-gem", "~> 1.0"
+  # ===== Runtime dependencies =====
+  spec.add_dependency "activesupport", ">= 7.0", "< 9.0"
+  spec.add_dependency "dry-matcher", ">= 1.0", "< 2.0"
+  spec.add_dependency "dry-monads", ">= 1.6", "< 2.0"
+  spec.add_dependency "dry-struct", ">= 1.6", "< 2.0"
+  spec.add_dependency "dry-types", ">= 1.7", "< 2.0"
+  spec.add_dependency "dry-validation", ">= 1.9", "< 2.0"
+  spec.add_dependency "hashie", ">= 5.0", "< 6.0"
+  spec.add_dependency "thor", ">= 1.2", "< 2.0"
+  # NOTE: aktifkan hanya jika kamu memang memakai loader Zeitwerk DI DALAM gem.
+  # Jika tidak, lebih aman dihapus agar footprint kecil.
+  # spec.add_dependency "zeitwerk",      ">= 2.6", "< 3.0"
 
-  # For more information and examples about making a new gem, check out our
-  # guide at: https://bundler.io/guides/creating_gem.html
-  #
-  ## clean arch
-  spec.add_dependency 'dry-matcher', '~> 1.0.0'
-  spec.add_dependency 'dry-monads', '~> 1.6.0'
-  spec.add_dependency 'dry-struct', '~> 1.6.0'
-  spec.add_dependency 'dry-transaction', '~> 0.16.0'
-  spec.add_dependency 'dry-types', '~> 1.7.2'
-  spec.add_dependency 'dry-validation', '~> 1.10.0'
+  # Opsional untuk integrasi langsung dengan Rails (bukan keharusan)
+  # spec.add_dependency "railties", ">= 7.0", "< 9.0"
 
-  spec.add_development_dependency 'bundler', '~> 2.5.18'
-  spec.add_development_dependency 'rake', '~> 13.2.1'
-  spec.add_development_dependency 'rspec', '~> 3.13.0'
+  # ===== Development/test dependencies =====
+  spec.add_development_dependency "bundler",         ">= 2.4", "< 3.0"
+  spec.add_development_dependency "generator_spec",  ">= 0.9",  "< 1.0"
+  spec.add_development_dependency "rake",            ">= 13.0", "< 14.0"
+  spec.add_development_dependency "rspec",           ">= 3.12", "< 4.0"
+  spec.add_development_dependency "rubocop",         ">= 1.63", "< 2.0"
+  spec.add_development_dependency "rubocop-rspec",   ">= 3.0",  "< 4.0"
+
+  # ===== Nice-to-have metadata di RubyGems =====
+  spec.metadata = {
+    "homepage_uri"          => spec.homepage,
+    "source_code_uri"       => "https://github.com/kotaroisme/rider-kick",
+    "changelog_uri"         => "https://github.com/kotaroisme/rider-kick/blob/main/CHANGELOG.md",
+    "bug_tracker_uri"       => "https://github.com/kotaroisme/rider-kick/issues",
+    "rubygems_mfa_required" => "true"
+  }
+
+  spec.post_install_message = <<~MSG
+    Thanks for installing rider-kick ⚡️
+    Docs & examples: #{spec.homepage}
+    PSA: Run `bundle exec rspec` to verify your generators and contracts.
+  MSG
 end

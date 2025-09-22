@@ -76,6 +76,7 @@ module Core::Utils::RequestMethods
     if is_ssl
       http.use_ssl = true
     end
-    http.request(request)
+    response = http.request(request)
+    parse_response(response)
   end
 end

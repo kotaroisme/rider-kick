@@ -2,99 +2,131 @@ model: <%= @model_class %>
 resource_name: <%= @scope_path %>
 resource_owner_id: <%= @resource_owner_id %>
 actor: <%= @actor %>
+
 fields:
-<% @model_class.columns.each do |field| -%>
-  - <%= field.name.to_s %>
+<% @fields.each do |f| -%>
+- <%= f %>
 <% end -%>
-<% @uploaders.each do |field| -%>
-  - <%= field %>
+<% @uploaders.each do |f| -%>
+- <%= f %>
 <% end -%>
+
 uploaders:
-<% @uploaders.each do |field| -%>
-  - <%= field %>
+<% @uploaders.each do |f| -%>
+- <%= f %>
 <% end -%>
+
 search_able:
-<% contract_fields.each do |field| -%>
-<% if ['title', 'name'].include?(field) -%>
-  - <%= field %>
+<% @search_able.each do |f| -%>
+- <%= f %>
+<% end -%>
+
+# ---- Enriched metadata (opsional, untuk tooling/insight) ----
+schema:
+columns:
+<% columns_meta.each do |c| -%>
+- name: <%= c[:name] %>
+type: <%= c[:type] %>
+sql_type: <%= c[:sql_type] %>
+null: <%= c[:null] %>
+<% if c[:default].present? -%>
+default: <%= c[:default].inspect %>
+<% end -%>
+<% if c[:precision] || c[:scale] -%>
+precision: <%= c[:precision] || 'null' %>
+scale: <%= c[:scale] || 'null' %>
+<% end -%>
+<% if c[:limit] -%>
+limit: <%= c[:limit] %>
 <% end -%>
 <% end -%>
+foreign_keys:
+<% (fkeys_meta.presence || []).each do |fk| -%>
+- column: <%= fk[:column] %>
+to_table: <%= fk[:to_table] %>
+<% end -%>
+indexes:
+<% (indexes_meta.presence || []).each do |ix| -%>
+- columns: [<%= ix[:columns].join(', ') %>]
+unique: <%= ix[:unique] %>
+<% end -%>
+enums:
+<% if enums_meta.present? -%>
+<% enums_meta.each do |name, map| -%>
+<%= name %>: <%= map.keys %>
+<% end -%>
+<% else -%>
+{}
+<% end -%>
+
 controllers:
-  list_fields:
-<% @fields.each do |field| -%>
-    - <%= field %>
+list_fields:
+<% @fields.each do |f| -%>
+- <%= f %>
 <% end -%>
-  show_fields:
-<% @model_class.columns.each do |field| -%>
-    - <%= field.name.to_s %>
+show_fields:
+<% (@columns.map { _1[:name] } + @uploaders).uniq.each do |f| -%>
+- <%= f %>
 <% end -%>
-<% @uploaders.each do |field| -%>
-    - <%= field %>
+form_fields:
+<% @fields.each do |f| -%>
+- name: <%= f %>
+type: <%= get_column_type(f) %>
 <% end -%>
-  form_fields:
-<% (@fields).each do |field| -%>
-    - name: <%= field %>
-      type: string
+<% @uploaders.each do |f| -%>
+- name: <%= f %>
+type: <%= is_singular?(f) ? 'file' : 'files' %>
 <% end -%>
-<% (@uploaders).each do |field| -%>
-<% if is_singular?(field) -%>
-    - name: <%= field %>
-      type: file
-<% else -%>
-    - name: <%= field %>
-      type: files
-<% end -%>
-<% end -%>
+
 domains:
-  action_list:
-    use_case:
-      contract:
-  action_fetch_by_id:
-    use_case:
-      contract:
-        - required(:id).filled(:string)
-  action_create:
-    use_case:
-      contract:
-<% (@fields + @uploaders).each do |field| -%>
-  <% column_type = get_column_type(field) -%>
-  <% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
-<% if @uploaders.include?(field) -%>
-<% if is_singular?(field) -%>
-    - optional(:<%= field %>).maybe(<%= dry_type %>)
-<% else -%>
-    - optional(:<%= field %>).maybe(:array)
+action_list:
+use_case:
+contract:
+<% @search_able.each do |f| -%>
+# optional search fields: <%= f %>
 <% end -%>
-<% else -%>
-    - required(:<%= field %>).filled(<%= dry_type %>)
+action_fetch_by_id:
+use_case:
+contract:
+- required(:id).filled(:string)
+<% if @resource_owner_id.present? -%>
+- required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
+
+action_create:
+use_case:
+contract:
+<% if @resource_owner_id.present? -%>
+- required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
-  action_update:
-    use_case:
-      contract:
-        - required(:id).filled(:string)
-<% (@fields + @uploaders).each do |field| -%>
-<% column_type = get_column_type(field) -%>
-<% dry_type = @type_mapping[column_type.to_s] || ':string' -%>
-<% if @uploaders.include?(field) -%>
-<% if is_singular?(field) -%>
-        - optional(:<%= field %>).maybe(<%= dry_type %>)
-<% else -%>
-        - optional(:<%= field %>).maybe(:array)
+<% contract_lines_for_create.each do |line| -%>
+<%= line %>
 <% end -%>
-<% else -%>
-        - optional(:<%= field %>).maybe(<%= dry_type %>)
+
+action_update:
+use_case:
+contract:
+- required(:id).filled(:string)
+<% if @resource_owner_id.present? -%>
+- required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
+<% contract_lines_for_update.each do |line| -%>
+<%= line %>
 <% end -%>
-  action_destroy:
-    use_case:
-      contract:
-        - required(:id).filled(:string)
+
+action_destroy:
+use_case:
+contract:
+- required(:id).filled(:string)
+<% if @resource_owner_id.present? -%>
+- required(:<%= @resource_owner_id %>).filled(:string)
+<% end -%>
+
 entity:
-  skipped_fields:
-    - id
-    - created_at
-    - updated_at
-<% if @model_class.columns.map(&:name).include?(:type) -%>
-    - type
+skipped_fields:
+- id
+- created_at
+- updated_at
+<% if @columns.map { _1[:name] }.include?('type') -%>
+- type
 <% end -%>

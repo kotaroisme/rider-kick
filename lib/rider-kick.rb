@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'hashie'
 require 'rider_kick/entities/failure_details'
 require 'rider_kick/builders/abstract_active_record_entity_builder'
 require 'rider_kick/matchers/use_case_result'

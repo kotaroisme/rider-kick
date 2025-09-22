@@ -57,6 +57,7 @@ module RiderKick
       template 'domains/core/entities/pagination.rb.tt', File.join("#{path_app}/domains/core/entities", 'pagination.rb')
 
       template 'domains/core/repositories/abstract_repository.rb.tt', File.join("#{path_app}/domains/core/repositories", 'abstract_repository.rb')
+      template 'domains/core/utils/abstract_utils.rb.tt', File.join("#{path_app}/domains/core/utils", 'abstract_utils.rb')
       template 'domains/core/utils/request_methods.rb.tt', File.join("#{path_app}/domains/core/utils", 'request_methods.rb')
     end
 

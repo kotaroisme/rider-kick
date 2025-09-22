@@ -30,6 +30,10 @@ module RiderKick
       @uploaders          = uploaders
       @actor              = arg_settings['actor'].downcase
 
+      @resource_owner_id  = arg_settings['resource_owner_id'].to_s.presence
+      @search_able        = arg_settings['search_able'].to_s.split(',').map(&:strip).reject(&:blank?) # => []
+      @columns            = columns_meta # materialize array meta kolom
+
       @type_mapping = {
         'uuid'     => ':string',
         'string'   => ':string',
@@ -54,6 +58,35 @@ module RiderKick
         'datetime' => 'Types::Strict::Time'
       }
     end
+
+    def columns_meta
+      @model_class.columns.map do |c|
+        {
+          name:      c.name.to_s,
+          type:      c.type,
+          sql_type:  (c.respond_to?(:sql_type) ? c.sql_type : nil),
+          null:      (c.respond_to?(:null) ? c.null : nil),
+          default:   (c.respond_to?(:default) ? c.default : nil),
+          precision: (c.respond_to?(:precision) ? c.precision : nil),
+          scale:     (c.respond_to?(:scale) ? c.scale : nil),
+          limit:     (c.respond_to?(:limit) ? c.limit : nil)
+        }
+      end
+    end
+
+    # optional: isi jika nanti kamu introspeksi foreign keys
+    def fkeys_meta   = []
+
+    # optional: isi jika nanti kamu introspeksi index
+    def indexes_meta = []
+
+    # optional: isi jika pakai AR enum
+    def enums_meta   = {}
+
+    # Kontrak opsional untuk baris dinamis; biarkan kosong dulu agar template aman
+    def contract_lines_for_create = []
+
+    def contract_lines_for_update = []
 
     def is_singular?(str)
       str.singularize == str

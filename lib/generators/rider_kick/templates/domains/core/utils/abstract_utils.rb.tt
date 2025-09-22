@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::Repositories::AbstractRepository
+class Core::Utils::AbstractUtils
   include Dry::Monads[:result, :do]
 
   def http
@@ -25,15 +25,5 @@ class Core::Repositories::AbstractRepository
     else
       Hashie::Mash.new(params)
     end
-  end
-
-  def paginate!(pagy)
-    Core::Builders::Pagination.new(pagy).build
-  end
-
-  def build_pagination_variable!(params)
-    @per_page = params[:per_page] || Pagy::DEFAULT[:limit]
-    @page     = params[:page] || Pagy::DEFAULT[:page]
-    @search   = params[:search]
   end
 end

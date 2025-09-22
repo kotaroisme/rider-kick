@@ -526,9 +526,6 @@ Lint/ShadowedException:
 Lint/RedundantStringCoercion:
   Enabled: true
 
-Lint/Syntax:
-  Enabled: true
-
 Lint/UnderscorePrefixedVariableName:
   Enabled: true
 
