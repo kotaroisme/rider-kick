@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'yaml'
 module RiderKick
   class ScaffoldGenerator < Rails::Generators::Base
@@ -35,31 +37,51 @@ module RiderKick
 
       # Mengambil detail konfigurasi
       model_name    = @structure.model
+      @model_class  = model_name.camelize.constantize # Pindahkan ini ke atas
+
       resource_name = @structure.resource_name.singularize.underscore.downcase
       entity        = @structure.entity || {}
 
       @actor                = @structure.actor
       @resource_owner_id    = @structure.resource_owner_id
-      @uploaders            = @structure.uploaders || []
-      @search_able          = @structure.search_able || []
       @services             = @structure.domains || {}
-      @contract_list        = @services.action_list.use_case.contract || []
-      @contract_fetch_by_id = @services.action_fetch_by_id.use_case.contract || []
-      @contract_create      = @services.action_create.use_case.contract || []
-      @contract_update      = @services.action_update.use_case.contract || []
-      @contract_destroy     = @services.action_destroy.use_case.contract || []
-      @skipped_fields       = entity.skipped_fields || []
-      @custom_fields        = entity.custom_fields || []
+
+      # Membaca kontrak dinamis (dari Peningkatan #1)
+      @contract_list        = @services.action_list&.use_case&.contract || []
+      @contract_fetch_by_id = @services.action_fetch_by_id&.use_case&.contract || []
+      @contract_create      = @services.action_create&.use_case&.contract || []
+      @contract_update      = @services.action_update&.use_case&.contract || []
+      @contract_destroy     = @services.action_destroy&.use_case&.contract || []
+
+      # Membaca DSL filter repositori baru (Peningkatan #2)
+      @repository_list_filters = @services.action_list&.repository&.filters || []
+
+      # --- AWAL BLOK MODIFIKASI: PERBAIKAN (PENINGKATAN #3) ---
+
+      # Membaca definisi uploader baru (array of hashes)
+      @uploaders = (@structure.uploaders || []).map { |up| Hashie::Mash.new(up) }
+
+      # Membaca atribut DB eksplisit (array string)
+      @entity_db_fields = entity.db_attributes || []
+
+      # --- AKHIR BLOK MODIFIKASI ---
 
       @variable_subject = model_name.split('::').last.underscore.downcase
       @scope_path       = resource_name.pluralize.underscore.downcase
       @scope_class      = @scope_path.camelize
       @scope_subject    = @scope_path.singularize
-      @model_class      = model_name.camelize.constantize
       @subject_class    = @variable_subject.camelize
+
       @fields           = contract_fields
+
       @route_scope_path = arg_scope['scope'].to_s.downcase rescue ''
       @route_scope_class = @route_scope_path.camelize rescue ''
+
+      # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
+      # Tambahkan hash metadata kolom, sama seperti di structure_generator
+      @columns_meta      = columns_meta
+      @columns_meta_hash = @columns_meta.index_by { |c| c[:name] }
+      # --- AKHIR BLOK MODIFIKASI ---
 
       @type_mapping        = {
         'uuid'     => ':string',
@@ -92,11 +114,9 @@ module RiderKick
 
     def set_uploader_in_model
       @uploaders.each do |uploader|
-        method_strategy = 'has_many_attached'
-        if is_singular?(uploader)
-          method_strategy = 'has_one_attached'
-        end
-        inject_into_file File.join("#{root_path_app}/models", @model_class.to_s.split('::').first.downcase.to_s, "#{@variable_subject}.rb"), "  #{method_strategy} :#{uploader}, dependent: :purge\n", after: "class #{@model_class} < ApplicationRecord\n"
+        method_strategy = uploader.type == 'single' ? 'has_one_attached' : 'has_many_attached'
+        uploader_name = uploader.name
+        inject_into_file File.join("#{root_path_app}/models", @model_class.to_s.split('::').first.downcase.to_s, "#{@variable_subject}.rb"), "  #{method_strategy} :#{uploader_name}, dependent: :purge\n", after: "class #{@model_class} < ApplicationRecord\n" rescue nil
       end
     end
 
@@ -117,12 +137,34 @@ module RiderKick
     end
 
     def contract_fields
-      skip_contract_fields = @skipped_fields.map(&:strip).uniq
-      @model_class.columns.reject { |column| skip_contract_fields.include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      @model_class.columns.map(&:name).map(&:to_s)
     end
 
+    # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
+    # Menambahkan helper-helper ini dari structure_generator
+    def columns_meta
+      @model_class.columns.map do |c|
+        {
+          name:      c.name.to_s,
+          type:      c.type,
+          sql_type:  (c.respond_to?(:sql_type) ? c.sql_type : nil),
+          null:      (c.respond_to?(:null) ? c.null : nil),
+          default:   (c.respond_to?(:default) ? c.default : nil),
+          precision: (c.respond_to?(:precision) ? c.precision : nil),
+          scale:     (c.respond_to?(:scale) ? c.scale : nil),
+          limit:     (c.respond_to?(:limit) ? c.limit : nil)
+        }
+      end
+    end
+
+    def get_column_meta(field)
+      @columns_meta_hash[field.to_s] || {}
+    end
+    # --- AKHIR BLOK MODIFIKASI ---
+
     def get_column_type(field)
-      @uploaders.include?(field) ? 'upload' : @model_class.columns_hash[field.to_s].type
+      is_uploader = @uploaders.any? { |up| up.name == field.to_s }
+      is_uploader ? 'upload' : @model_class.columns_hash[field.to_s].type
     end
 
     def root_path_app

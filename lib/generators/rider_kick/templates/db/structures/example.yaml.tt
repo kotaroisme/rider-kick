@@ -1,132 +1,117 @@
+# RiderKick Structure Definition for <%= @scope_class %>
+# This file acts as a centralized contract for code generation.
+# Modifying this file and re-running 'rider_kick:scaffold' will update the domain logic.
+
+actor: <%= @actor %>
 model: <%= @model_class %>
 resource_name: <%= @scope_path %>
-resource_owner_id: <%= @resource_owner_id %>
-actor: <%= @actor %>
 
-fields:
-<% @fields.each do |f| -%>
-- <%= f %>
-<% end -%>
-<% @uploaders.each do |f| -%>
-- <%= f %>
-<% end -%>
+# (Opsional) Tentukan kolom foreign key untuk resource_owner
+# Ini akan secara otomatis menambahkan filter 'WHERE owner_id = ?' di semua kueri
+resource_owner_id: <%= @resource_owner_id || "nil # (Contoh: owner_id)" %>
 
+# --- Definisi Uploaders ---
+# Tentukan uploader yang akan diproses oleh Builder.
+# 'type' bisa 'single' (has_one_attached) atau 'multiple' (has_many_attached).
 uploaders:
-<% @uploaders.each do |f| -%>
-- <%= f %>
+<%# PERBAIKAN: Iterasi Hash, bukan String (Ini memperbaiki Kegagalan #2) %>
+<% entity_uploader_definitions.each do |uploader_hash| -%>
+- { name: '<%= uploader_hash[:name] %>', type: '<%= uploader_hash[:type] %>' }
+<% end -%>
+<% if entity_uploader_definitions.empty? -%>
+# (Contoh: { name: 'avatar', type: 'single' })
+# (Contoh: { name: 'images', type: 'multiple' })
 <% end -%>
 
-search_able:
-<% @search_able.each do |f| -%>
-- <%= f %>
+# --- Definisi Entitas ---
+# Tentukan atribut yang akan diekspos oleh Entity (Dry::Struct).
+# Ini adalah pendekatan 'opt-in'. Hanya atribut yang terdaftar di sini
+# yang akan ada di Entity dan diproses oleh Builder.
+entity:
+# Atribut yang diambil langsung dari model database
+db_attributes:
+<% entity_db_fields.each do |field| -%>
+- <%= field %>
+<% end -%>
+<% if entity_db_fields.empty? -%>
+# (Contoh: name)
+# (Contoh: email)
 <% end -%>
 
-# ---- Enriched metadata (opsional, untuk tooling/insight) ----
-schema:
-columns:
-<% columns_meta.each do |c| -%>
-- name: <%= c[:name] %>
-type: <%= c[:type] %>
-sql_type: <%= c[:sql_type] %>
-null: <%= c[:null] %>
-<% if c[:default].present? -%>
-default: <%= c[:default].inspect %>
-<% end -%>
-<% if c[:precision] || c[:scale] -%>
-precision: <%= c[:precision] || 'null' %>
-scale: <%= c[:scale] || 'null' %>
-<% end -%>
-<% if c[:limit] -%>
-limit: <%= c[:limit] %>
-<% end -%>
-<% end -%>
-foreign_keys:
-<% (fkeys_meta.presence || []).each do |fk| -%>
-- column: <%= fk[:column] %>
-to_table: <%= fk[:to_table] %>
-<% end -%>
-indexes:
-<% (indexes_meta.presence || []).each do |ix| -%>
-- columns: [<%= ix[:columns].join(', ') %>]
-unique: <%= ix[:unique] %>
-<% end -%>
-enums:
-<% if enums_meta.present? -%>
-<% enums_meta.each do |name, map| -%>
-<%= name %>: <%= map.keys %>
-<% end -%>
-<% else -%>
-{}
-<% end -%>
-
-controllers:
-list_fields:
-<% @fields.each do |f| -%>
-- <%= f %>
-<% end -%>
-show_fields:
-<% (@columns.map { _1[:name] } + @uploaders).uniq.each do |f| -%>
-- <%= f %>
-<% end -%>
-form_fields:
-<% @fields.each do |f| -%>
-- name: <%= f %>
-type: <%= get_column_type(f) %>
-<% end -%>
-<% @uploaders.each do |f| -%>
-- name: <%= f %>
-type: <%= is_singular?(f) ? 'file' : 'files' %>
-<% end -%>
-
+# --- Definisi Domain (Use Cases & Repositories) ---
 domains:
 action_list:
 use_case:
 contract:
-<% @search_able.each do |f| -%>
-# optional search fields: <%= f %>
+<% contract_lines_for_list.each do |line| -%>
+- <%= line %>
 <% end -%>
+<% if contract_lines_for_list.empty? -%>
+# (Kontrak 'dry-validation' untuk list, misal: "optional(:status).maybe(:string)")
+<% end -%>
+repository:
+filters:
+<% repository_list_filters.each do |line| -%>
+- <%= line %>
+<% end -%>
+<% if repository_list_filters.empty? -%>
+# (Contoh: { field: 'name', type: 'search' })
+# (Contoh: { field: 'status', type: 'exact' })
+<% end -%>
+
 action_fetch_by_id:
 use_case:
 contract:
-- required(:id).filled(:string)
-<% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
+# (Kontrak 'dry-validation' untuk fetch_by_id)
 
 action_create:
 use_case:
 contract:
-<% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
 <% contract_lines_for_create.each do |line| -%>
-<%= line %>
+- <%= line %>
+<% end -%>
+<% if contract_lines_for_create.empty? -%>
+# (Kontrak 'dry-validation' untuk create, misal: "required(:name).filled(:string)")
 <% end -%>
 
 action_update:
 use_case:
 contract:
-- required(:id).filled(:string)
-<% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
 <% contract_lines_for_update.each do |line| -%>
-<%= line %>
+- <%= line %>
+<% end -%>
+<% if contract_lines_for_update.empty? -%>
+# (Kontrak 'dry-validation' untuk update, misal: "optional(:name).maybe(:string)")
 <% end -%>
 
 action_destroy:
 use_case:
 contract:
-- required(:id).filled(:string)
-<% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
+# (Kontrak 'dry-validation' untuk destroy)
 
-entity:
-skipped_fields:
-- id
-- created_at
-- updated_at
-<% if @columns.map { _1[:name] }.include?('type') -%>
-- type
+# --- Metadata Kolom Database (Hanya untuk Referensi, Jangan Diubah Manual) ---
+schema:
+columns:
+<%# --- AWAL BLOK MODIFIKASI: PERBAIKAN SYNTAXERROR --- %>
+<%# Kita bangun string atribut di Ruby murni untuk menghindari error ERB nested %>
+<% @columns.each do |column| -%>
+<%
+# 1. Siapkan array untuk menampung atribut
+attrs = []
+
+# 2. Tambahkan nama dan tipe (selalu ada)
+attrs << "name: '#{column[:name]}'"
+attrs << "type: '#{column[:type]}'"
+
+# 3. Tambahkan nullability (jika ada)
+attrs << "null: #{column[:null]}" if column.key?(:null)
+
+# 4. Tambahkan default (jika ada dan tidak nil)
+#    Menggunakan .inspect secara otomatis akan meng-quote string dengan benar
+if column.key?(:default) && !column[:default].nil?
+attrs << "default: #{column[:default].inspect}"
+end
+%>
+- { <%= attrs.join(', ') %> }
 <% end -%>
+<%# --- AKHIR BLOK MODIFIKASI --- %>

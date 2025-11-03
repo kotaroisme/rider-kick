@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RiderKick
   class Structure < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
@@ -27,12 +29,11 @@ module RiderKick
       @scope_path         = @subject_class.pluralize.underscore.downcase
       @scope_class        = @scope_path.camelize
       @fields             = contract_fields
-      @uploaders          = uploaders
+      @uploaders          = uploaders # Ini array string dari argumen
       @actor              = arg_settings['actor'].downcase
 
       @resource_owner_id  = arg_settings['resource_owner_id'].to_s.presence
-      @search_able        = arg_settings['search_able'].to_s.split(',').map(&:strip).reject(&:blank?) # => []
-      @columns            = columns_meta # materialize array meta kolom
+      @columns            = columns_meta
 
       @type_mapping = {
         'uuid'     => ':string',
@@ -57,6 +58,70 @@ module RiderKick
         'date'     => 'Types::Strict::Date',
         'datetime' => 'Types::Strict::Time'
       }
+
+      @columns_meta_hash = @columns.index_by { |c| c[:name] }
+
+      @contract_lines_for_create = @fields.map do |field_name|
+        column_meta = @columns_meta_hash[field_name]
+        next nil if column_meta.nil?
+
+        predicate = column_meta[:null] ? 'optional' : 'required'
+        db_type = get_column_type(field_name).to_s
+        validation_type = @type_mapping[db_type]&.delete(':')
+
+        if db_type == 'upload'
+          validation_type = "'Types::File'"
+        elsif validation_type.nil?
+          validation_type = 'string'
+        end
+
+        if predicate == 'required'
+          "\"required(:#{field_name}).filled(#{validation_type})\""
+        else
+          "\"optional(:#{field_name}).maybe(#{validation_type})\""
+        end
+      end.compact
+
+      @contract_lines_for_update = @fields.map do |field_name|
+        column_meta = @columns_meta_hash[field_name]
+        next nil if column_meta.nil?
+
+        db_type = get_column_type(field_name).to_s
+        validation_type = @type_mapping[db_type]&.delete(':')
+
+        if db_type == 'upload'
+          validation_type = "'Types::File'"
+        elsif validation_type.nil?
+          validation_type = 'string'
+        end
+
+        "\"optional(:#{field_name}).maybe(#{validation_type})\""
+      end.compact
+
+      search_able_fields = arg_settings['search_able'].to_s.split(',').map(&:strip).reject(&:blank?)
+
+      @repository_list_filters = search_able_fields.map do |field|
+        "{ field: '#{field}', type: 'search' }"
+      end
+
+      @contract_lines_for_list = @repository_list_filters.map do |filter_hash|
+        field_name = filter_hash.match(/field: '([^']+)'/)[1]
+        "\"optional(:#{field_name}).maybe(:string)\""
+      end
+
+      # --- AWAL BLOK MODIFIKASI: PERBAIKAN (PENINGKATAN #3) ---
+
+      @entity_db_fields = @fields
+
+      # 1. Tentukan definisi uploader yang kaya (array of hashes)
+      #    @uploaders di sini masih array string dari argumen
+      @entity_uploader_definitions = @uploaders.map do |uploader_name|
+        type = is_singular?(uploader_name) ? 'single' : 'multiple'
+        # PERBAIKAN: Ini harus menjadi Hash, BUKAN String
+        { name: uploader_name, type: type }
+      end
+
+      # --- AKHIR BLOK MODIFIKASI ---
     end
 
     def columns_meta
@@ -74,19 +139,37 @@ module RiderKick
       end
     end
 
-    # optional: isi jika nanti kamu introspeksi foreign keys
     def fkeys_meta   = []
 
-    # optional: isi jika nanti kamu introspeksi index
     def indexes_meta = []
 
-    # optional: isi jika pakai AR enum
     def enums_meta   = {}
 
-    # Kontrak opsional untuk baris dinamis; biarkan kosong dulu agar template aman
-    def contract_lines_for_create = []
+    def contract_lines_for_create
+      @contract_lines_for_create || []
+    end
 
-    def contract_lines_for_update = []
+    def contract_lines_for_update
+      @contract_lines_for_update || []
+    end
+
+    def contract_lines_for_list
+      @contract_lines_for_list || []
+    end
+
+    def repository_list_filters
+      @repository_list_filters || []
+    end
+
+    # --- AWAL BLOK MODIFIKASI: Getter untuk Atribut Entitas Baru ---
+    def entity_db_fields
+      @entity_db_fields || []
+    end
+
+    def entity_uploader_definitions
+      @entity_uploader_definitions || []
+    end
+    # --- AKHIR BLOK MODIFIKASI ---
 
     def is_singular?(str)
       str.singularize == str
@@ -97,14 +180,20 @@ module RiderKick
     end
 
     def contract_fields
-      @model_class.columns.reject { |column| ['id', 'created_at', 'updated_at', 'type'].include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      # Metode ini sekarang hanya digunakan oleh setup_variables untuk @fields
+      @model_class.columns.reject { |column|
+        ['id', 'created_at', 'updated_at', 'type'].include?(column.name.to_s)
+      }.map(&:name).map(&:to_s)
     end
 
     def get_column_type(field)
-      uploaders.include?(field) ? 'upload' : @model_class.columns_hash[field].type
+      # uploaders di sini masih array string
+      uploaders.include?(field) ?
+        'upload' : @model_class.columns_hash[field].type
     end
 
     def uploaders
+      # Ini adalah array string mentah dari argumen
       return [] unless arg_settings['uploaders'].present?
       arg_settings['uploaders'].split(',').map(&:strip)
     end

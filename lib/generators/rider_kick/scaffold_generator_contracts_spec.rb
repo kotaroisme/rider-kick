@@ -39,7 +39,7 @@ RSpec.describe 'rider_kick:scaffold contracts' do
             action_create:      { use_case: { contract: [] } }
             action_update:      { use_case: { contract: [] } }
             action_destroy:     { use_case: { contract: [] } }
-          entity: { skipped_fields: [id, created_at, updated_at] }
+          entity: { db_attributes: [id, created_at, updated_at] }
         YAML
 
         # Generate

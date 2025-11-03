@@ -54,7 +54,6 @@ Gem::Specification.new do |spec|
   # ===== Nice-to-have metadata di RubyGems =====
   spec.metadata = {
     "homepage_uri"          => spec.homepage,
-    "source_code_uri"       => "https://github.com/kotaroisme/rider-kick",
     "changelog_uri"         => "https://github.com/kotaroisme/rider-kick/blob/main/CHANGELOG.md",
     "bug_tracker_uri"       => "https://github.com/kotaroisme/rider-kick/issues",
     "rubygems_mfa_required" => "true"

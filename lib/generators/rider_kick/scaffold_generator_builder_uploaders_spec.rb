@@ -29,7 +29,7 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
           model: Models::User
           resource_name: users
           actor: owner
-          uploaders: [avatar, images]
+          uploaders: [{ name: 'avatar', type: 'single' }, { name: 'images', type: 'multiple' }]
           search_able: []
           domains:
             action_list:        { use_case: { contract: [] } }
@@ -37,17 +37,19 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
             action_create:      { use_case: { contract: [] } }
             action_update:      { use_case: { contract: [] } }
             action_destroy:     { use_case: { contract: [] } }
-          entity: { skipped_fields: [id, created_at, updated_at] }
+          entity: { db_attributes: [id, created_at, updated_at] }
         YAML
 
         klass.new(['users']).generate_use_case
 
         builder = File.read('app/domains/core/builders/user.rb')
         # singular -> satu URL string
-        expect(builder).to include('avatar: (Rails.application.routes.url_helpers.polymorphic_url(params.avatar)')
+        expect(builder).to include('def with_avatar_url(model)')
+        expect(builder).to include('model.avatar.url')
         # plural -> array dengan helper build_assets
-        expect(builder).to include('images: build_assets(params.images)')
-        expect(builder).to include('def build_assets(assets)')
+        expect(builder).to include('def with_images_urls(model)')
+        expect(builder).to include('model.images.map')
+        expect(builder).to include('attachment.url')
       end
     end
   end

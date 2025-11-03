@@ -54,7 +54,7 @@ RSpec.describe 'rider_kick:scaffold generator (success)' do
               use_case:
                 contract: []
           entity:
-            skipped_fields:
+            db_attributes:
               - id
               - created_at
               - updated_at

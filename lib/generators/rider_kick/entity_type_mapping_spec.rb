@@ -28,7 +28,7 @@ RSpec.describe 'entity type mapping' do
           model: Models::User
           resource_name: users
           actor: owner
-          uploaders: []
+          uploaders: [{ name: 'avatar', type: 'single' }]
           search_able: []
           domains:
             action_list:        { use_case: { contract: [] } }
@@ -36,7 +36,7 @@ RSpec.describe 'entity type mapping' do
             action_create:      { use_case: { contract: [] } }
             action_update:      { use_case: { contract: [] } }
             action_destroy:     { use_case: { contract: [] } }
-          entity: { skipped_fields: [id, created_at, updated_at] }
+          entity: { db_attributes: [name, price, created_at, updated_at] }
         YAML
 
         klass.new(['users']).generate_use_case
