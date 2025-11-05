@@ -13,13 +13,13 @@ RSpec.describe 'rider_kick:scaffold contracts' do
   it 'menulis kontrak schema yang tepat di use_cases (list/fetch_by_id/create/update/destroy)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.mkdir_p(%w[
-                            app/domains/core/use_cases
-                            app/domains/core/repositories
-                            app/domains/core/builders
-                            app/domains/core/entities
-                            app/models/models
-                            db/structures
+        FileUtils.mkdir_p([
+                            RiderKick.configuration.domains_path + '/core/use_cases',
+                            RiderKick.configuration.domains_path + '/core/repositories',
+                            RiderKick.configuration.domains_path + '/core/builders',
+                            RiderKick.configuration.domains_path + '/core/entities',
+                            'app/models/models',
+                            'db/structures'
                           ])
 
         # Stub model & kolom
@@ -47,7 +47,7 @@ RSpec.describe 'rider_kick:scaffold contracts' do
 
         # Cek isi kontrak
         readf = ->(path) { File.read(File.join(path)) }
-        base  = 'app/domains/core/use_cases/users'
+        base  = RiderKick.configuration.domains_path + '/core/use_cases/users'
 
         expect(readf["#{base}/owner_list_user.rb"])
           .to include('Core::UseCases::Contract::Default', 'Contract::Pagination')

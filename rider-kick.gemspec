@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
 
   # File list (pastikan templates generator ikut terkirim)
   # Gunakan git ls-files untuk rilis via git agar presisi:
-  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) { |io|
+  spec.files = IO.popen(['git', 'ls-files', '-z'], chdir: __dir__, err: IO::NULL) { |io|
     io.read.split("\x0").select { |f|
       f.start_with?("lib/", "exe/", "README", "CHANGELOG", "LICENSE")
     }

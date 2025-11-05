@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
+require 'rails/generators'
+require 'active_support/inflector'
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/enumerable'
+require 'hashie'
+
 module RiderKick
   class Structure < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
-    argument :arg_settings, type: :hash, default: '', banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
+    argument :arg_settings, type: :hash, default: {}, banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
 
     def generate_use_case
       validation!
@@ -16,7 +22,7 @@ module RiderKick
     private
 
     def validation!
-      unless Dir.exist?('app/domains')
+      unless Dir.exist?(RiderKick.configuration.domains_path)
         say 'Error must create clean arch structure first!'
         raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
       end
@@ -35,29 +41,8 @@ module RiderKick
       @resource_owner_id  = arg_settings['resource_owner_id'].to_s.presence
       @columns            = columns_meta
 
-      @type_mapping = {
-        'uuid'     => ':string',
-        'string'   => ':string',
-        'text'     => ':string',
-        'integer'  => ':integer',
-        'boolean'  => ':bool',
-        'float'    => ':float',
-        'decimal'  => ':float',
-        'date'     => ':date',
-        'upload'   => 'Types::File',
-        'datetime' => ':string'
-      }
-      @entity_type_mapping = {
-        'uuid'     => 'Types::Strict::String',
-        'string'   => 'Types::Strict::String',
-        'text'     => 'Types::Strict::String',
-        'integer'  => 'Types::Strict::Integer',
-        'boolean'  => 'Types::Strict::Bool',
-        'float'    => 'Types::Strict::Float',
-        'decimal'  => 'Types::Strict::Decimal',
-        'date'     => 'Types::Strict::Date',
-        'datetime' => 'Types::Strict::Time'
-      }
+      @type_mapping = RiderKick::TYPE_MAPPING
+      @entity_type_mapping = RiderKick::ENTITY_TYPE_MAPPING
 
       @columns_meta_hash = @columns.index_by { |c| c[:name] }
 

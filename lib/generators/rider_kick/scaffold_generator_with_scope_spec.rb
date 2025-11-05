@@ -13,10 +13,10 @@ RSpec.describe 'rider_kick:scaffold generator (with scope)' do
   it 'meletakkan use_cases di folder route scope yang benar' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.mkdir_p('app/domains/core/use_cases')
-        FileUtils.mkdir_p('app/domains/core/repositories')
-        FileUtils.mkdir_p('app/domains/core/builders')
-        FileUtils.mkdir_p('app/domains/core/entities')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/repositories')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/builders')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/entities')
         FileUtils.mkdir_p('app/models/models')
         FileUtils.mkdir_p('db/structures')
 
@@ -41,13 +41,13 @@ RSpec.describe 'rider_kick:scaffold generator (with scope)' do
         instance.generate_use_case
 
         # use_cases berada di app/domains/core/use_cases/dashboard/users/...
-        path = 'app/domains/core/use_cases/dashboard/users'
-        %w[owner_create_user owner_update_user owner_list_user owner_destroy_user owner_fetch_user_by_id].each do |uc|
+        path = RiderKick.configuration.domains_path + '/core/use_cases/dashboard/users'
+        ['owner_create_user', 'owner_update_user', 'owner_list_user', 'owner_destroy_user', 'owner_fetch_user_by_id'].each do |uc|
           expect(File).to exist(File.join(path, "#{uc}.rb"))
         end
         # repositories tetap di .../repositories/users
-        %w[create_user update_user list_user destroy_user fetch_user_by_id].each do |repo|
-          expect(File).to exist(File.join('app/domains/core/repositories/users', "#{repo}.rb"))
+        ['create_user', 'update_user', 'list_user', 'destroy_user', 'fetch_user_by_id'].each do |repo|
+          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/core/repositories/users', "#{repo}.rb"))
         end
       end
     end

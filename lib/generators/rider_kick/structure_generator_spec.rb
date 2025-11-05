@@ -10,7 +10,7 @@ RSpec.describe 'rider_kick:structure generator' do
   it 'mengangkat Thor::Error jika app/domains belum ada' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        expect(Dir.exist?('app/domains')).to be false
+        expect(Dir.exist?(RiderKick.configuration.domains_path)).to be false
         instance = klass.new(['Models::User'])           # ← instansiasi dengan argumen
         expect { instance.generate_use_case }            # ← panggil task langsung
           .to raise_error(Thor::Error, /clean_arch.*--setup/i)

@@ -1136,3 +1136,5 @@ Naming/MethodParameterName:
 Layout/ClassStructure:
   Enabled: true
 
+Style/WordArray:
+  EnforcedStyle: brackets

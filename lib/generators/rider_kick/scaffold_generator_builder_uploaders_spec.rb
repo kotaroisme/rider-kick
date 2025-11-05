@@ -13,13 +13,13 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
   it 'menulis mapping uploader: single (has_one) & multiple (has_many) ke builder' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.mkdir_p(%w[
-                            app/domains/core/use_cases
-                            app/domains/core/repositories
-                            app/domains/core/builders
-                            app/domains/core/entities
-                            app/models/models
-                            db/structures
+        FileUtils.mkdir_p([
+                            RiderKick.configuration.domains_path + '/core/use_cases',
+                            RiderKick.configuration.domains_path + '/core/repositories',
+                            RiderKick.configuration.domains_path + '/core/builders',
+                            RiderKick.configuration.domains_path + '/core/entities',
+                            'app/models/models',
+                            'db/structures'
                           ])
 
         File.write('app/models/models/user.rb', "class Models::User < ApplicationRecord; end\n")
@@ -42,7 +42,7 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
 
         klass.new(['users']).generate_use_case
 
-        builder = File.read('app/domains/core/builders/user.rb')
+        builder = File.read(RiderKick.configuration.domains_path + '/core/builders/user.rb')
         # singular -> satu URL string
         expect(builder).to include('def with_avatar_url(model)')
         expect(builder).to include('model.avatar.url')

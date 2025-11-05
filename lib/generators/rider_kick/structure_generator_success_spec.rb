@@ -13,7 +13,7 @@ RSpec.describe 'rider_kick:structure generator (success)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # 1) siapkan struktur minimal Clean Arch
-        FileUtils.mkdir_p('app/domains/core/use_cases')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
         FileUtils.mkdir_p('app/models/models')
 
         # 2) stub namespace & model + metadata kolom

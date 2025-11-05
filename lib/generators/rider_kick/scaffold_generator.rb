@@ -1,16 +1,23 @@
 # frozen_string_literal: true
 
+require 'rails/generators'
+require 'active_support/inflector'
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/enumerable'
+require 'hashie'
 require 'yaml'
 module RiderKick
   class ScaffoldGenerator < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_structure, type: :string, default: '', banner: ''
-    argument :arg_scope, type: :hash, default: '', banner: 'scope:dashboard'
+    argument :arg_scope, type: :hash, default: {}, banner: 'scope:dashboard'
 
     def generate_use_case
       validation!
       setup_variables
+      validate_repository_filters!   # ← NEW: validate filter fields exist
+      validate_entity_fields!        # ← NEW: validate entity db_attributes exist
 
       generate_files('create')
       generate_files('update')
@@ -25,9 +32,48 @@ module RiderKick
     private
 
     def validation!
-      unless Dir.exist?('app/domains')
+      unless Dir.exist?(RiderKick.configuration.domains_path)
         say 'Error must create clean arch structure first!'
         raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
+      end
+    end
+
+    def validate_repository_filters!
+      return if @repository_list_filters.empty?
+
+      @repository_list_filters.each do |filter_hash|
+        # Filter hash format: "{ field: 'name', type: 'search' }"
+        # Kita perlu extract field name dari string ini
+        match = filter_hash.match(/field: '([^']+)'/)
+        next unless match
+
+        field_name = match[1]
+
+        unless @model_class.column_names.include?(field_name)
+          raise Thor::Error, <<~ERROR
+            Repository filter error di '#{arg_structure}_structure.yaml':
+            Field '#{field_name}' tidak ditemukan di model #{@model_class}.
+
+            Available columns: #{@model_class.column_names.join(', ')}
+          ERROR
+        end
+      end
+    end
+
+    def validate_entity_fields!
+      return if @entity_db_fields.empty?
+
+      missing_fields = @entity_db_fields - @model_class.column_names
+
+      if missing_fields.any?
+        raise Thor::Error, <<~ERROR
+          Entity configuration error di '#{arg_structure}_structure.yaml':
+          Field(s) tidak ditemukan di model #{@model_class}: #{missing_fields.join(', ')}
+
+          Available columns: #{@model_class.column_names.join(', ')}
+
+          Fix: Update section 'entity.db_attributes' di YAML file.
+        ERROR
       end
     end
 
@@ -74,8 +120,8 @@ module RiderKick
 
       @fields           = contract_fields
 
-      @route_scope_path = arg_scope['scope'].to_s.downcase rescue ''
-      @route_scope_class = @route_scope_path.camelize rescue ''
+      @route_scope_path = arg_scope.fetch('scope', '').to_s.downcase
+      @route_scope_class = @route_scope_path.camelize
 
       # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
       # Tambahkan hash metadata kolom, sama seperti di structure_generator
@@ -83,29 +129,8 @@ module RiderKick
       @columns_meta_hash = @columns_meta.index_by { |c| c[:name] }
       # --- AKHIR BLOK MODIFIKASI ---
 
-      @type_mapping        = {
-        'uuid'     => ':string',
-        'string'   => ':string',
-        'text'     => ':string',
-        'integer'  => ':integer',
-        'boolean'  => ':bool',
-        'float'    => ':float',
-        'decimal'  => ':float',
-        'date'     => ':date',
-        'upload'   => 'Types::File',
-        'datetime' => ':string'
-      }
-      @entity_type_mapping = {
-        'uuid'     => 'Types::Strict::String',
-        'string'   => 'Types::Strict::String',
-        'text'     => 'Types::Strict::String',
-        'integer'  => 'Types::Strict::Integer',
-        'boolean'  => 'Types::Strict::Bool',
-        'float'    => 'Types::Strict::Float',
-        'decimal'  => 'Types::Strict::Decimal',
-        'date'     => 'Types::Strict::Date',
-        'datetime' => 'Types::Strict::Time'
-      }
+      @type_mapping        = RiderKick::TYPE_MAPPING
+      @entity_type_mapping = RiderKick::ENTITY_TYPE_MAPPING
     end
 
     def is_singular?(str)
@@ -116,7 +141,24 @@ module RiderKick
       @uploaders.each do |uploader|
         method_strategy = uploader.type == 'single' ? 'has_one_attached' : 'has_many_attached'
         uploader_name = uploader.name
-        inject_into_file File.join("#{root_path_app}/models", @model_class.to_s.split('::').first.downcase.to_s, "#{@variable_subject}.rb"), "  #{method_strategy} :#{uploader_name}, dependent: :purge\n", after: "class #{@model_class} < ApplicationRecord\n" rescue nil
+        namespace_path = @model_class.to_s.deconstantize.split('::').map(&:downcase).join('/')
+        model_path = File.join("#{root_path_app}/models", namespace_path, "#{@variable_subject}.rb")
+
+        unless File.exist?(model_path)
+          say "Skip attaching #{uploader_name}: model file not found: #{model_path}", :yellow
+          next
+        end
+
+        content = File.read(model_path)
+        if content.include?("#{method_strategy} :#{uploader_name}")
+          say "Skip attaching #{uploader_name}: already present in #{model_path}", :blue
+          next
+        end
+
+        line_to_insert = "  #{method_strategy} :#{uploader_name}, dependent: :purge\n"
+        class_anchor_regex = /class #{Regexp.escape(@model_class.to_s)} < ApplicationRecord[^\n]*\n/
+
+        inject_into_file model_path, line_to_insert, after: class_anchor_regex
       end
     end
 
@@ -127,17 +169,18 @@ module RiderKick
       @use_case_class   = use_case_filename.camelize
       @repository_class = repository_filename.camelize
 
-      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/use_cases/", @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
-      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/repositories/#{@scope_path}", "#{repository_filename}.rb")
+      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
+      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
     end
 
     def copy_builder_and_entity_files
-      template 'domains/core/builders/builder.rb.tt', File.join("#{root_path_app}/domains/core/builders", "#{@variable_subject}.rb")
-      template 'domains/core/entities/entity.rb.tt', File.join("#{root_path_app}/domains/core/entities", "#{@variable_subject}.rb")
+      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, 'core', 'builders', "#{@variable_subject}.rb")
+      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, 'core', 'entities', "#{@variable_subject}.rb")
     end
 
     def contract_fields
-      @model_class.columns.map(&:name).map(&:to_s)
+      @model_class.columns.reject { |c| ['id', 'created_at', 'updated_at', 'type'].include?(c.name.to_s) }
+        .map { |c| c.name.to_s }
     end
 
     # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
