@@ -40,9 +40,6 @@ Gem::Specification.new do |spec|
   # Jika tidak, lebih aman dihapus agar footprint kecil.
   # spec.add_dependency "zeitwerk",      ">= 2.6", "< 3.0"
 
-  # Opsional untuk integrasi langsung dengan Rails (bukan keharusan)
-  # spec.add_dependency "railties", ">= 7.0", "< 9.0"
-
   # ===== Development/test dependencies =====
   spec.add_development_dependency "bundler",         ">= 2.4", "< 3.0"
   spec.add_development_dependency "generator_spec",  ">= 0.9",  "< 1.0"

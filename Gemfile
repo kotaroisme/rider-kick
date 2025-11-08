@@ -6,7 +6,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :development, :test do
-  gem 'debugging'
+  gem 'debug'
   gem 'rubocop-performance'
   gem 'rubocop-rails-omakase', require: false
 end

@@ -9,7 +9,6 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
 AllCops:
   SuggestExtensions: false
-  TargetRubyVersion: 3.3.4
   DisabledByDefault: true
   Exclude:
     - '**/templates/**/*'
@@ -1134,3 +1133,5 @@ Naming/MethodParameterName:
 Layout/ClassStructure:
   Enabled: true
 
+Style/WordArray:
+  EnforcedStyle: brackets

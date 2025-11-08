@@ -3,6 +3,7 @@ module RiderKick
     source_root File.expand_path('templates', __dir__)
 
     class_option :setup, type: :boolean, default: false, desc: 'Setup domain structure'
+    class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
 
     def validate_setup_option
       raise Thor::Error, 'The --setup option must be specified to create the domain structure.' unless options.setup
@@ -14,6 +15,7 @@ module RiderKick
     end
 
     def setup_configuration
+      configure_engine
       setup_domain_structure
 
       setup_initializers
@@ -28,6 +30,17 @@ module RiderKick
     end
 
     private
+
+    def configure_engine
+      if options[:engine].present?
+        RiderKick.configuration.engine_name = options[:engine]
+        say "Using engine: #{RiderKick.configuration.engine_name}", :green
+      else
+        # Pastikan engine_name nil jika tidak di-specify, sehingga menggunakan main app
+        RiderKick.configuration.engine_name = nil
+        say 'Using main app (no engine specified)', :blue
+      end
+    end
 
     def setup_active_storage
       run 'rails active_storage:install'
@@ -103,6 +116,11 @@ module RiderKick
 
     def setup_models
       template 'models/application_record.rb', File.join('app/models/application_record.rb')
+
+      # Untuk engine, models path akan di app/models/<engine_name>
+      # Untuk main app, models path akan di app/models/models
+      models_dir = RiderKick.configuration.models_path
+      empty_directory models_dir unless Dir.exist?(models_dir)
       template 'models/models.rb', File.join('app/models/models.rb')
     end
 

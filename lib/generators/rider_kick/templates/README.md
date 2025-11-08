@@ -1,46 +1,67 @@
+## Setup project
+
+### Init Project
+```bash
+$ cp env.example .env.development
+$ bundle install
+$ rails db:drop db:create db:migrate  db:seed
 ```
-# frozen_string_literal: true
-
-module Builders
-  class <%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
-    # Metode 'build' utama diwarisi dari AbstractActiveRecordEntityBuilder
-    # Metode ini akan secara otomatis memetakan atribut dari model ke entitas.
-    
-    # --- AWAL BLOK MODIFIKASI: Serializer URL Uploader Dinamis (PENINGKATAN #3) ---
-    
-    # Kita perlu secara eksplisit memberi tahu builder cara mengisi
-    # atribut '_url' / '_urls' yang didefinisikan di entitas.
-    
-    <%- @uploaders.each do |uploader| -%>
-    <%- if uploader.type == 'single' -%>
-    # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_url'
-    def with_<%= uploader.name %>_url(model)
-      return nil unless model.<%= uploader.name %>.attached?
-      
-      # Anda bisa mengubah logika ini, misal menggunakan Rails.application.routes.url_helpers
-      # jika Anda membutuhkan URL yang absolut.
-      model.<%= uploader.name %>.url
-    rescue StandardError
-      nil
-    end
-    
-    <%- else -%>
-    # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_urls'
-    def with_<%= uploader.name %>_urls(model)
-      return [] unless model.<%= uploader.name %>.attached?
-
-      model.<%= uploader.name %>.map do |attachment|
-        # Anda bisa mengubah logika ini juga
-        attachment.url
-      rescue StandardError
-        nil
-      end.compact
-    end
-    
-    <%- end -%>
-    <%- end -%>
-    # --- AKHIR BLOK MODIFIKASI ---
-
-  end
-end
+### Run Server
+```bash
+$ rails s -b 0.0.0.0 -e development
+# open new tab then run
+# open your browser then serve to http://0.0.0.0:3000
 ```
+
+### Run Console
+```bash
+$ rails console
+(dev)> use_case = Core::UseCases::GetVersion
+(dev)> contract = use_case.contract!({})
+(dev)> result   = use_case.new(contract).result
+=> Success({:version=>"v1"}) # success
+(dev)> result.success?
+=> true
+(dev)> result.success
+=> {:version=>"0.0.1"}
+```
+
+Project Structure
+## Clean Architecture
+This structure provides helper interfaces and classes to assist in the construction of application with Clean Architecture, as described in Robert Martin's seminal book.
+
+```
+- app
+  - domains 
+    - core
+      - entities (Contract Response)
+      - builder
+      - repositories (Business logic)
+      - use_cases (Just Usecase)
+      - utils (Class Reusable)
+```
+## Screaming architecture - use cases as an organisational principle
+Uncle Bob suggests that your source code organisation should allow developers to easily find a listing of all use cases your application provides. Here's an example of how this might look in a this application.
+```
+- app
+  - domains 
+    - core
+      ...
+      - usecase
+        - retail_customer_opens_bank_account.rb
+        - retail_customer_makes_deposit.rb
+        - ...
+```
+Note that the use case name contains:
+
+- the user role
+- the action
+- the (sometimes implied) subject
+```ruby
+    [user role][action][subject].rb
+    # retail_customer_opens_bank_account.rb
+    # admin_fetch_info.rb [specific usecase]
+    # fetch_info.rb [generic usecase] every role can access it
+    ```
+
+Happy Coding!

@@ -3,7 +3,7 @@
 require 'rails/generators'
 require 'tmpdir'
 require 'active_support/inflector'
-require 'ostruct'
+
 require 'fileutils'
 require 'generators/rider_kick/scaffold_generator'
 

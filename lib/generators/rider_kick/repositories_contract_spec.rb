@@ -4,7 +4,6 @@
 require 'rails/generators'
 require 'tmpdir'
 require 'fileutils'
-require 'ostruct'
 require 'generators/rider_kick/scaffold_generator'
 
 RSpec.describe 'repositories scaffolded content' do

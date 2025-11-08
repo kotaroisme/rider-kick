@@ -12,14 +12,27 @@ module RiderKick
 
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
     argument :arg_settings, type: :hash, default: {}, banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
+    class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
 
     def generate_use_case
+      configure_engine
       validation!
       setup_variables
       generate_files(@scope_path)
     end
 
     private
+
+    def configure_engine
+      if options[:engine].present?
+        RiderKick.configuration.engine_name = options[:engine]
+        say "Using engine: #{RiderKick.configuration.engine_name}", :green
+      else
+        # Pastikan engine_name nil jika tidak di-specify, sehingga menggunakan main app
+        RiderKick.configuration.engine_name = nil
+        say 'Using main app (no engine specified)', :blue
+      end
+    end
 
     def validation!
       unless Dir.exist?(RiderKick.configuration.domains_path)
@@ -52,12 +65,12 @@ module RiderKick
 
         predicate = column_meta[:null] ? 'optional' : 'required'
         db_type = get_column_type(field_name).to_s
-        validation_type = @type_mapping[db_type]&.delete(':')
+        validation_type = @type_mapping[db_type]
 
         if db_type == 'upload'
-          validation_type = "'Types::File'"
+          validation_type = 'Types::File'
         elsif validation_type.nil?
-          validation_type = 'string'
+          validation_type = ':string'
         end
 
         if predicate == 'required'
@@ -72,12 +85,12 @@ module RiderKick
         next nil if column_meta.nil?
 
         db_type = get_column_type(field_name).to_s
-        validation_type = @type_mapping[db_type]&.delete(':')
+        validation_type = @type_mapping[db_type]
 
         if db_type == 'upload'
-          validation_type = "'Types::File'"
+          validation_type = 'Types::File'
         elsif validation_type.nil?
-          validation_type = 'string'
+          validation_type = ':string'
         end
 
         "\"optional(:#{field_name}).maybe(#{validation_type})\""

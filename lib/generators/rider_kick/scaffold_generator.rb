@@ -12,8 +12,10 @@ module RiderKick
 
     argument :arg_structure, type: :string, default: '', banner: ''
     argument :arg_scope, type: :hash, default: {}, banner: 'scope:dashboard'
+    class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
 
     def generate_use_case
+      configure_engine
       validation!
       setup_variables
       validate_repository_filters!   # ← NEW: validate filter fields exist
@@ -30,6 +32,17 @@ module RiderKick
     end
 
     private
+
+    def configure_engine
+      if options[:engine].present?
+        RiderKick.configuration.engine_name = options[:engine]
+        say "Using engine: #{RiderKick.configuration.engine_name}", :green
+      else
+        # Pastikan engine_name nil jika tidak di-specify, sehingga menggunakan main app
+        RiderKick.configuration.engine_name = nil
+        say 'Using main app (no engine specified)', :blue
+      end
+    end
 
     def validation!
       unless Dir.exist?(RiderKick.configuration.domains_path)
@@ -141,8 +154,7 @@ module RiderKick
       @uploaders.each do |uploader|
         method_strategy = uploader.type == 'single' ? 'has_one_attached' : 'has_many_attached'
         uploader_name = uploader.name
-        namespace_path = @model_class.to_s.deconstantize.split('::').map(&:downcase).join('/')
-        model_path = File.join("#{root_path_app}/models", namespace_path, "#{@variable_subject}.rb")
+        model_path = model_file_path(@model_class, @variable_subject)
 
         unless File.exist?(model_path)
           say "Skip attaching #{uploader_name}: model file not found: #{model_path}", :yellow
@@ -150,7 +162,12 @@ module RiderKick
         end
 
         content = File.read(model_path)
-        if content.include?("#{method_strategy} :#{uploader_name}")
+
+        # More robust check: look for has_one_attached/has_many_attached with the uploader name
+        # Pattern matches: has_one_attached :name or has_one_attached :name, dependent: ...
+        attachment_pattern = /#{Regexp.escape(method_strategy)}\s+:#{Regexp.escape(uploader_name)}\b/
+
+        if content.match?(attachment_pattern)
           say "Skip attaching #{uploader_name}: already present in #{model_path}", :blue
           next
         end
@@ -159,6 +176,25 @@ module RiderKick
         class_anchor_regex = /class #{Regexp.escape(@model_class.to_s)} < ApplicationRecord[^\n]*\n/
 
         inject_into_file model_path, line_to_insert, after: class_anchor_regex
+      end
+    end
+
+    def model_file_path(model_class, variable_subject)
+      # Extract namespace dari model class
+      # Models::User -> namespace setelah Models adalah []
+      # Models::EngineName::User -> namespace setelah Models adalah [EngineName]
+      full_namespace = model_class.to_s.deconstantize
+      namespace_parts = full_namespace.split('::').reject(&:empty?)
+
+      # Jika model_class mengandung Models::EngineName::User, maka path ke engine
+      # Jika model_class Models::User, maka path ke main app
+      if namespace_parts.length > 1 && namespace_parts.first == 'Models'
+        # Engine: Models::EngineName::User -> app/models/<engine_name>/<model>.rb
+        engine_name_part = namespace_parts[1].underscore
+        File.join('app/models', engine_name_part, "#{variable_subject}.rb")
+      else
+        # Main app: Models::User -> app/models/models/<model>.rb
+        File.join(RiderKick.configuration.models_path, "#{variable_subject}.rb")
       end
     end
 
