@@ -1,0 +1,8 @@
+FactoryBot.define do
+  factory :<%= @factory_name %>, class: '<%= @model_name %>' do
+<% @attributes.each do |column| -%>
+    <%= column.name %> { <%= generate_faker_value(column) %> }
+<% end -%>
+  end
+end
+

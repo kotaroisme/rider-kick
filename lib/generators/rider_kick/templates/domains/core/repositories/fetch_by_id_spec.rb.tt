@@ -1,0 +1,63 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Core::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+  describe '#call' do
+    let(:builder) { instance_double(Core::Builders::<%= @subject_class %>) }
+    let(:entity) { instance_double(Core::Entities::<%= @subject_class %>) }
+    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
+    let(:<%= @variable_subject %>_id) { 'test-id-123' }
+    
+    let(:valid_params) do
+      Hashie::Mash.new(
+        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? %>,
+        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
+      )
+    end
+
+    subject(:repository) { described_class.new(params: valid_params) }
+
+    before do
+      allow(Core::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
+      allow(builder).to receive(:build).and_return(entity)
+    end
+
+    context 'when <%= @variable_subject %> exists' do
+      it 'fetches the <%= @variable_subject %> and returns success with entity', :aggregate_failures do
+<% if @resource_owner_id.present? -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(
+          id: <%= @variable_subject %>_id,
+          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
+        ).and_return(<%= @variable_subject %>)
+<% else -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(<%= @variable_subject %>)
+<% end -%>
+
+        result = repository.call(builder: true)
+
+        expect(result).to be_success
+        expect(result.value!).to eq(entity)
+      end
+    end
+
+    context 'when <%= @variable_subject %> does not exist' do
+      it 'returns failure with not found message' do
+<% if @resource_owner_id.present? -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(
+          id: <%= @variable_subject %>_id,
+          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
+        ).and_return(nil)
+<% else -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(nil)
+<% end -%>
+
+        result = repository.call(builder: true)
+
+        expect(result).to be_failure
+        expect(result.failure).to eq('<%= @subject_class %> not found')
+      end
+    end
+  end
+end
+

@@ -1,0 +1,79 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe <%= @model_class %>, type: :model do
+  describe 'associations' do
+<% if @resource_owner_id.present? -%>
+    it { is_expected.to belong_to(:<%= @resource_owner_id.to_s.gsub(/_id$/, '') %>)<%= @resource_owner_id.to_s.end_with?('_id') ? '' : '.optional' %> }
+<% end -%>
+<% if @resource_owner_id.blank? -%>
+    # Add association tests here as needed
+<% end -%>
+  end
+
+<% if @uploaders.present? -%>
+  describe 'Active Storage attachments', :aggregate_failures do
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+    it 'has one <%= uploader.name %> attached' do
+      expect(<%= @model_class %>.new.<%= uploader.name %>).to be_an_instance_of(ActiveStorage::Attached::One)
+    end
+
+    it 'can attach <%= uploader.name %>' do
+      <%= @variable_subject %> = <%= @model_class %>.new
+      <%= @variable_subject %>.<%= uploader.name %>.attach(
+        io: StringIO.new('test'),
+        filename: '<%= uploader.name %>.jpg',
+        content_type: 'image/jpeg'
+      )
+      expect(<%= @variable_subject %>.<%= uploader.name %>).to be_attached
+    end
+<% else -%>
+    it 'has many <%= uploader.name %> attached' do
+      expect(<%= @model_class %>.new.<%= uploader.name %>).to be_an_instance_of(ActiveStorage::Attached::Many)
+    end
+
+    it 'can attach multiple <%= uploader.name %>' do
+      <%= @variable_subject %> = <%= @model_class %>.new
+      <%= @variable_subject %>.<%= uploader.name %>.attach(
+        [
+          { io: StringIO.new('test1'), filename: '<%= uploader.name %>_1.jpg', content_type: 'image/jpeg' },
+          { io: StringIO.new('test2'), filename: '<%= uploader.name %>_2.jpg', content_type: 'image/jpeg' }
+        ]
+      )
+      expect(<%= @variable_subject %>.<%= uploader.name %>.count).to eq(2)
+    end
+<% end -%>
+
+<% end -%>
+  end
+
+<% end -%>
+  describe 'validations' do
+    # Add validation tests here based on your model requirements
+    it { is_expected.to validate_presence_of(:id).on(:update) }
+  end
+
+<% if @structure.schema&.enums.present? -%>
+  describe 'enums' do
+<% @structure.schema.enums.each do |enum_name, enum_values| -%>
+    it { is_expected.to define_enum_for(:<%= enum_name %>).with_values(<%= enum_values.inspect %>) }
+<% end -%>
+  end
+
+<% end -%>
+  describe 'database columns' do
+<% @columns_meta.each do |column| -%>
+    it 'has <%= column[:name] %> column' do
+      expect(<%= @model_class %>.column_names).to include('<%= column[:name] %>')
+    end
+<% end -%>
+  end
+
+  describe 'callbacks' do
+    # Add callback tests here if your model has callbacks
+  end
+end
+
+

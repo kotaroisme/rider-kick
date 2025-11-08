@@ -7,3 +7,5 @@ Example:
         bin/rails generate rider_kick:clean_arch --setup
         bin/rails generate rider_kick:structure Models::User actor:owner uploaders:asset,images
         bin/rails generate rider_kick:scaffold users scope:dashboard
+        bin/rails generate rider_kick:factory Models::Article scope:core
+        bin/rails generate rider_kick:factory Models::Article scope:core --static

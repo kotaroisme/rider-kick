@@ -1,45 +1,51 @@
 # frozen_string_literal: true
 
-module Builders
-  class <%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
-    # Metode 'build' utama diwarisi dari AbstractActiveRecordEntityBuilder
-    # Metode ini akan secara otomatis memetakan atribut dari model ke entitas.
+class Core::Builders::<%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity Core::Entities::<%= @subject_class%>
 
-    # --- AWAL BLOK MODIFIKASI: Serializer URL Uploader Dinamis (PENINGKATAN #3) ---
+<% if @uploaders.present? -%>
+  def attributes_for_entity
+    {
+<% @uploaders.each_with_index do |uploader, index| -%>
+<% if uploader.type == 'single' -%>
+      <%= uploader.name %>_url: with_<%= uploader.name %>_url(@params)<%= index < @uploaders.length - 1 ? ',' : '' %>
+<% else -%>
+      <%= uploader.name %>_urls: with_<%= uploader.name %>_urls(@params)<%= index < @uploaders.length - 1 ? ',' : '' %>
+<% end -%>
+<% end -%>
+    }
+  end
 
-    # Kita perlu secara eksplisit memberi tahu builder cara mengisi
-    # atribut '_url' / '_urls' yang didefinisikan di entitas.
+  private
+<% end -%>
+  <%- @uploaders.each do |uploader| -%>
+  <%- if uploader.type == 'single' -%>
+  # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_url'
+  def with_<%= uploader.name %>_url(model)
+    return nil unless model.<%= uploader.name %>.attached?
 
-    <%- @uploaders.each do |uploader| -%>
-    <%- if uploader.type == 'single' -%>
-    # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_url'
-    def with_<%= uploader.name %>_url(model)
-      return nil unless model.<%= uploader.name %>.attached?
+    # Anda bisa mengubah logika ini, misal menggunakan Rails.application.routes.url_helpers
+    # jika Anda membutuhkan URL yang absolut.
+    model.<%= uploader.name %>.url
+  rescue StandardError
+    nil
+  end
 
-      # Anda bisa mengubah logika ini, misal menggunakan Rails.application.routes.url_helpers
-      # jika Anda membutuhkan URL yang absolut.
-      model.<%= uploader.name %>.url
+  <%- else -%>
+  # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_urls'
+  def with_<%= uploader.name %>_urls(model)
+    return [] unless model.<%= uploader.name %>.attached?
+
+    model.<%= uploader.name %>.map do |attachment|
+      # Anda bisa mengubah logika ini juga
+      attachment.url
     rescue StandardError
       nil
-    end
-
-    <%- else -%>
-    # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_urls'
-    def with_<%= uploader.name %>_urls(model)
-      return [] unless model.<%= uploader.name %>.attached?
-
-      model.<%= uploader.name %>.map do |attachment|
-        # Anda bisa mengubah logika ini juga
-        attachment.url
-      rescue StandardError
-        nil
-      end.compact
-    end
-
-    <%- end -%>
-    <%- end -%>
-    # --- AKHIR BLOK MODIFIKASI ---
-
+    end.compact
   end
+
+  <%- end -%>
+  <%- end -%>
+
 end
 

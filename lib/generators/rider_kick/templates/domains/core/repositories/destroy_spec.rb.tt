@@ -1,0 +1,89 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Core::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+  describe '#call' do
+    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
+    let(:<%= @variable_subject %>_id) { 'test-id-123' }
+    
+    let(:valid_params) do
+      Hashie::Mash.new(
+        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? %>,
+        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
+      )
+    end
+
+    let(:error_messages) do
+      [
+        { 'attribute' => 'base', 'type' => 'cannot_destroy', 'options' => { 'message' => 'must be valid format' } }
+      ]
+    end
+
+    let(:active_model_errors) do
+      errors = double('errors')
+      allow(errors).to receive(:each).and_yield(
+        double(as_json: error_messages.first)
+      )
+      errors
+    end
+
+    subject(:repository) { described_class.new(params: valid_params) }
+
+    context 'when <%= @variable_subject %> exists' do
+      before do
+<% if @resource_owner_id.present? -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(
+          id: <%= @variable_subject %>_id,
+          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
+        ).and_return(<%= @variable_subject %>)
+<% else -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(<%= @variable_subject %>)
+<% end -%>
+      end
+
+      context 'when destroy is successful' do
+        it 'destroys the <%= @variable_subject %> and returns success message', :aggregate_failures do
+          allow(<%= @variable_subject %>).to receive(:destroy).and_return(true)
+
+          result = repository.call(builder: true)
+
+          expect(result).to be_success
+          expect(result.value!).to eq('<%= @subject_class%> Destroyed.')
+        end
+      end
+
+      context 'when destroy fails' do
+        it 'returns failure with errors', :aggregate_failures do
+          allow(<%= @variable_subject %>).to receive(:destroy).and_return(false)
+          allow(<%= @variable_subject %>).to receive(:errors).and_return(active_model_errors)
+
+          result = repository.call(builder: true)
+
+          expect(result).to be_failure
+          # Verify error structure matches build_errors output
+          expect(result.failure).to be_an(Array)
+        end
+      end
+    end
+
+    context 'when <%= @variable_subject %> does not exist' do
+      it 'returns failure with not found message', :aggregate_failures do
+<% if @resource_owner_id.present? -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(
+          id: <%= @variable_subject %>_id,
+          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
+        ).and_return(nil)
+<% else -%>
+        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(nil)
+<% end -%>
+
+        result = repository.call(builder: true)
+
+        expect(result).to be_failure
+        expect(result.failure).to eq('<%= @subject_class %> not found')
+      end
+    end
+  end
+end
+

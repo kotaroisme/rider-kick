@@ -1,0 +1,71 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>, type: :use_case do
+  describe '#call' do
+    let(:repository) { instance_double(Core::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
+    let(:entity) { instance_double(Core::Entities::<%= @subject_class %>) }
+
+    let(:valid_params) do
+      {
+<% if @resource_owner_id.present? -%>
+        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+<% end -%>
+<% @fields.each_with_index do |field, index| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
+        <%= field %>: Time.zone.now<%= index < @fields.length - 1 ? ',' : '' %>
+<% else -%>
+        <%= field %>: '<%= field %>_value'<%= index < @fields.length - 1 ? ',' : '' %>
+<% end -%>
+<% end -%>
+      }
+    end
+
+    before do
+      allow(Core::Repositories::<%= @scope_class%>::<%= @repository_class%>)
+        .to receive(:new)
+        .with(params: anything)
+        .and_return(repository)
+    end
+
+    context 'when parameters are valid' do
+      it 'creates a new <%= @variable_subject %> successfully', :aggregate_failures do
+        allow(repository).to receive(:call).with(builder: true).and_return(Dry::Monads::Success(entity))
+
+        contract = described_class.contract!(valid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_success
+        expect(result.value!).to eq(entity)
+      end
+    end
+
+    context 'when parameters are invalid' do
+      it 'returns failure with validation errors' do
+        invalid_params = {}
+
+        contract = described_class.contract!(invalid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_failure
+      end
+    end
+
+    context 'when repository fails' do
+      it 'returns failure', :aggregate_failures do
+        error = instance_double(Core::Entities::Error)
+        allow(repository).to receive(:call).with(builder: true).and_return(Dry::Monads::Failure(error))
+
+        contract = described_class.contract!(valid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_failure
+        expect(result.failure).to eq(error)
+      end
+    end
+  end
+end
+

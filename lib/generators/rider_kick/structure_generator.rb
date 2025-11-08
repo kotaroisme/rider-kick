@@ -107,8 +107,6 @@ module RiderKick
         "\"optional(:#{field_name}).maybe(:string)\""
       end
 
-      # --- AWAL BLOK MODIFIKASI: PERBAIKAN (PENINGKATAN #3) ---
-
       @entity_db_fields = @fields
 
       # 1. Tentukan definisi uploader yang kaya (array of hashes)
@@ -118,8 +116,6 @@ module RiderKick
         # PERBAIKAN: Ini harus menjadi Hash, BUKAN String
         { name: uploader_name, type: type }
       end
-
-      # --- AKHIR BLOK MODIFIKASI ---
     end
 
     def columns_meta
@@ -159,7 +155,6 @@ module RiderKick
       @repository_list_filters || []
     end
 
-    # --- AWAL BLOK MODIFIKASI: Getter untuk Atribut Entitas Baru ---
     def entity_db_fields
       @entity_db_fields || []
     end
@@ -167,7 +162,6 @@ module RiderKick
     def entity_uploader_definitions
       @entity_uploader_definitions || []
     end
-    # --- AKHIR BLOK MODIFIKASI ---
 
     def is_singular?(str)
       str.singularize == str
@@ -180,7 +174,7 @@ module RiderKick
     def contract_fields
       # Metode ini sekarang hanya digunakan oleh setup_variables untuk @fields
       @model_class.columns.reject { |column|
-        ['id', 'created_at', 'updated_at', 'type'].include?(column.name.to_s)
+        (uploaders + ['id', 'created_at', 'updated_at', 'type']).include?(column.name.to_s)
       }.map(&:name).map(&:to_s)
     end
 

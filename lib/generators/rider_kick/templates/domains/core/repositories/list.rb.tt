@@ -1,112 +1,28 @@
 # frozen_string_literal: true
 
-module Repositories
-  module <%= @scope_class %>
-    class <%= @repository_class %>
-      include Pagy::Backend
+class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+  include Pagy::Backend
 
-      # 'params' adalah hash yang divalidasi dari kontrak Use Case
-      # 'resource_owner' adalah objek opsional (misal: current_user)
-      def call(params:, resource_owner: nil)
-        # 1. Tentukan cakupan (scope) awal
-        # Kita mulai dengan 'all' atau scope default (misal: 'kept' jika menggunakan 'discard')
-        @scope = <%= @model_class %>.all
-
-        # 2. Terapkan filter kepemilikan (multi-tenancy)
-        apply_resource_owner_filter(resource_owner)
-
-        # 3. Terapkan filter dinamis dari parameter
-        apply_dynamic_filters(params)
-
-        # 4. Terapkan pengurutan (sorting)
-        apply_sorting(params)
-
-        # 5. Terapkan paginasi
-        # 'params[:page]' dan 'params[:per_page]' harus didefinisikan di kontrak Use Case
-        @pagy, @scope = pagy(@scope, page: params[:page] || 1, items: params[:per_page] || 20)
-
-        # 6. Kembalikan data dan metadata paginasi
-        { data: @scope, pagy: @pagy }
-      end
-
-      private
-
-      # --- Filter Kepemilikan ---
-      def apply_resource_owner_filter(resource_owner)
-        <%- if @resource_owner_id.present? -%>
-        # Filter ini wajib jika resource_owner_id didefinisikan di YAML
-        return unless resource_owner
-
-        @scope = @scope.where(<%= @resource_owner_id %>: resource_owner.id)
-        <%- else -%>
-        # Tidak ada resource_owner_id yang didefinisikan, lewati filter
-        _ = resource_owner # Menghindari lint error 'unused variable'
-        <%- end -%>
-      end
-
-      # --- Filter Dinamis ---
-      def apply_dynamic_filters(params)
-        # Iterasi filter yang didefinisikan di 'structure.yaml'
-        <%- @repository_list_filters.each do |filter| -%>
-        <%- # Menggunakan Hashie::Mash, kita bisa akses via string atau simbol -%>
-        filter_field = '<%= filter["field"] %>'
-        filter_type = '<%= filter["type"] %>'
-
-        # Cek apakah parameter untuk filter ini ada
-        if params[filter_field.to_sym].present?
-          value = params[filter_field.to_sym]
-
-          case filter_type
-          when 'search'
-            apply_search_filter(filter_field, value)
-          when 'exact'
-            apply_exact_filter(filter_field, value)
-          when 'range'
-            # Filter 'range' biasanya membutuhkan dua parameter (misal: created_at_from, created_at_to)
-            # Ini adalah area yang bisa dikembangkan lebih lanjut di YAML
-            apply_range_filter(params)
-          end
-        end
-        <%- end -%>
-      end
-
-      # --- Metode Helper Filter ---
-
-      def apply_search_filter(field, value)
-        # Menggunakan Arel untuk kueri LIKE yang case-insensitive
-        table = <%= @model_class %>.arel_table
-        @scope = @scope.where(table[field.to_sym].matches("%\#{value}%"))
-      end
-
-      def apply_exact_filter(field, value)
-        @scope = @scope.where(field.to_sym => value)
-      end
-
-      def apply_range_filter(params)
-        # Asumsi filter rentang untuk 'created_at'
-        # Kontrak Use Case harus memiliki :created_at_from dan :created_at_to
-        if params[:created_at_from].present? && params[:created_at_to].present?
-          @scope = @scope.where(created_at: params[:created_at_from]..params[:created_at_to])
-        end
-      end
-
-      # --- Pengurutan ---
-      def apply_sorting(params)
-        # Implementasi pengurutan dasar
-        # Kontrak Use Case bisa memiliki :sort_by dan :sort_dir
-        sort_by = params[:sort_by].presence || 'created_at'
-        sort_dir = params[:sort_dir].presence || 'desc'
-
-        # Pastikan kolom aman untuk di-sortir
-        allowed_columns = <%= @model_class %>.column_names
-
-        if allowed_columns.include?(sort_by)
-          @scope = @scope.order(sort_by => sort_dir)
-        else
-          @scope = @scope.order(created_at: :desc) # Fallback aman
-        end
-      end
-
-    end
+  def initialize(params:)
+    @params = prepare! params, sanitize: true
+    build_pagination_variable! @params
   end
+
+  def call(builder: true)
+<% if @resource_owner_id.present? -%>
+    resources = <%= @model_class %>.where(<%= @resource_owner_id %>: @params.<%= @resource_owner_id %>)
+<% else -%>
+    resources = <%= @model_class %>
+<% end -%>
+<% if @search_able.present? && @search_able.any? -%>
+    if @search.present? &&
+      resources = resources.where("<%= (@search_able || []).map { |f| "LOWER(#{f}) LIKE :search" }.join(' OR ') %>", search: "%#{@search.to_s.downcase}%")
+    end
+<% end -%>
+    return Success Hashie::Mash.new(response: [], meta: {}) unless resources.present?
+    pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
+    response      = results.map { |result| Core::Builders::<%= @subject_class %>.new(result).build }
+    Success Hashie::Mash.new(response: response, meta: paginate!(pagy))
+  end
+
 end

@@ -13,7 +13,7 @@ module RiderKick
     'decimal'  => ':decimal',
     'date'     => ':date',
     'upload'   => 'Types::File',
-    'datetime' => ':date_time'
+    'datetime' => ':time'
   }.freeze
   public_constant :TYPE_MAPPING
 

@@ -7,6 +7,7 @@ gemspec
 
 group :development, :test do
   gem 'debug'
+  gem 'faker'
   gem 'rubocop-performance'
   gem 'rubocop-rails-omakase', require: false
 end

@@ -16,7 +16,7 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::
 <% if @uploaders.present? -%>
     # Remove the existing images if a new one is being uploaded
 <% @uploaders.each do |uplaoder| -%>
-    resource.<%=uplaoder %>.purge if @params.<%=uplaoder %>.present? && resource.<%=uplaoder %>.attached?
+    resource.<%=uplaoder.name %>.purge if @params.<%=uplaoder.name %>.present? && resource.<%=uplaoder.name %>.attached?
 <% end -%>
 <% end -%>
     unless resource.update(@params.to_h)

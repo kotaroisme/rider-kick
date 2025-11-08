@@ -29,6 +29,7 @@ module RiderKick
 
       set_uploader_in_model
       copy_builder_and_entity_files
+      generate_spec_files
     end
 
     private
@@ -103,6 +104,7 @@ module RiderKick
 
       @actor                = @structure.actor
       @resource_owner_id    = @structure.resource_owner_id
+      @resource_owner       = @structure.resource_owner
       @services             = @structure.domains || {}
 
       # Membaca kontrak dinamis (dari Peningkatan #1)
@@ -121,7 +123,7 @@ module RiderKick
       @uploaders = (@structure.uploaders || []).map { |up| Hashie::Mash.new(up) }
 
       # Membaca atribut DB eksplisit (array string)
-      @entity_db_fields = entity.db_attributes || []
+      @entity_db_fields = entity.respond_to?(:db_attributes) ? entity.db_attributes || [] : []
 
       # --- AKHIR BLOK MODIFIKASI ---
 
@@ -130,6 +132,7 @@ module RiderKick
       @scope_class      = @scope_path.camelize
       @scope_subject    = @scope_path.singularize
       @subject_class    = @variable_subject.camelize
+      @search_able      = @structure.search_able
 
       @fields           = contract_fields
 
@@ -205,8 +208,13 @@ module RiderKick
       @use_case_class   = use_case_filename.camelize
       @repository_class = repository_filename.camelize
 
+      # Generate code files
       template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
       template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
+
+      # Generate spec files
+      generate_use_case_spec(action, suffix, use_case_filename)
+      generate_repository_spec(action, suffix, repository_filename)
     end
 
     def copy_builder_and_entity_files
@@ -256,6 +264,45 @@ module RiderKick
 
     def build_repository_filename(action, suffix = '')
       "#{action}_#{@variable_subject}#{suffix}"
+    end
+
+    def generate_use_case_spec(action, suffix, use_case_filename)
+      template_name = "domains/core/use_cases/#{action + suffix}_spec.rb.tt"
+      spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
+
+      if File.exist?(File.join(self.class.source_root, template_name))
+        template template_name, spec_path
+      else
+        say "Warning: Spec template not found: #{template_name}", :yellow
+      end
+    end
+
+    def generate_repository_spec(action, suffix, repository_filename)
+      template_name = "domains/core/repositories/#{action + suffix}_spec.rb.tt"
+      spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'repositories', @scope_path.to_s, "#{repository_filename}_spec.rb")
+
+      if File.exist?(File.join(self.class.source_root, template_name))
+        template template_name, spec_path
+      else
+        say "Warning: Spec template not found: #{template_name}", :yellow
+      end
+    end
+
+    def generate_spec_files
+      # Generate builder spec (covers entity validation too)
+      builder_spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'builders', "#{@variable_subject}_spec.rb")
+      template 'domains/core/builders/builder_spec.rb.tt', builder_spec_path
+
+      # Generate model spec
+      generate_model_spec
+    end
+
+    def generate_model_spec
+      model_spec_path = model_file_path(@model_class, @variable_subject).gsub('.rb', '_spec.rb')
+      # Place spec in spec/models directory instead of app/models
+      model_spec_path = model_spec_path.gsub('app/models', 'spec/models')
+
+      template 'models/model_spec.rb.tt', model_spec_path
     end
   end
 end

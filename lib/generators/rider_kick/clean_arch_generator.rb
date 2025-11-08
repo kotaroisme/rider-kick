@@ -137,6 +137,7 @@ module RiderKick
 
   gem "rspec-rails"
   gem "factory_bot_rails"
+  gem "faker"
   gem "shoulda-matchers"
         CONFIG
       end
@@ -166,8 +167,24 @@ module RiderKick
       template '.rspec', File.join('.rspec')
       template 'spec/support/repository_stubber.rb', File.join('spec/support/repository_stubber.rb')
       template 'spec/support/file_stuber.rb', File.join('spec/support/file_stuber.rb')
-      say 'Mengonfigurasi FactoryBot...'
+      template 'spec/support/class_stubber.rb', File.join('spec/support/class_stubber.rb')
+      say 'Mengonfigurasi FactoryBot dan Faker...'
+      setup_factory_bot
       template 'spec/rails_helper.rb', File.join('spec/rails_helper.rb')
+    end
+
+    def setup_factory_bot
+      # Create factories directory structure
+      empty_directory 'spec/factories'
+
+      # Create FactoryBot support file
+      template 'spec/support/factory_bot.rb', File.join('spec/support/factory_bot.rb')
+
+      # Create Faker support file
+      template 'spec/support/faker.rb', File.join('spec/support/faker.rb')
+
+      # Create example factories file
+      template 'spec/factories/.gitkeep', File.join('spec/factories/.gitkeep')
     end
 
     def path_app
