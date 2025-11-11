@@ -55,7 +55,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
   end
 
   context 'with --engine option' do
-    it 'uses engine models path (app/models/<engine_name>)' do
+    it 'uses engine models path (engines/<engine_name>/app/models/<engine_name>/models)' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           # Set configuration for test first
@@ -64,7 +64,8 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
 
           FileUtils.mkdir_p([
                               RiderKick.configuration.domains_path,
-                              'app/models/core',
+                              RiderKick.configuration.models_path,
+                              'engines/core/app/models/core',
                               'db/structures'
                             ])
 
@@ -94,7 +95,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             end
           end
 
-          File.write('app/models/core/user.rb', "class Models::Core::User < ApplicationRecord; end\n")
+          File.write('engines/core/app/models/core/models/user.rb', "class Models::Core::User < ApplicationRecord; end\n")
           File.write('db/structures/users_structure.yaml', <<~YAML)
             model: Models::Core::User
             resource_name: users
@@ -116,7 +117,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
           instance.generate_use_case
 
           # Verifikasi models_path menggunakan engine
-          expect(RiderKick.configuration.models_path).to eq('app/models/core')
+          expect(RiderKick.configuration.models_path).to eq('engines/core/app/models/core/models')
           expect(RiderKick.configuration.engine_name).to eq('Core')
         end
       end
@@ -127,7 +128,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
         Dir.chdir(dir) do
           # Set configuration for test first
           RiderKick.configuration.engine_name = 'Admin'
-          RiderKick.configuration.domain_scope = 'core/'
+          RiderKick.configuration.domain_scope = 'admin/core/' # Engine-prefixed
 
           FileUtils.mkdir_p([
                               RiderKick.configuration.domains_path,
@@ -184,7 +185,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
 
           # Verifikasi engine name sudah di-set
           expect(RiderKick.configuration.engine_name).to eq('Admin')
-          expect(RiderKick.configuration.models_path).to eq('app/models/admin')
+          expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
 
           # Verifikasi files ter-generate
           expect(File).to exist(RiderKick.configuration.domains_path + '/builders/product.rb')

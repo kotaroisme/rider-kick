@@ -15,7 +15,7 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
     resources = <%= @model_class %>
 <% end -%>
 <% if @search_able.present? && @search_able.any? -%>
-    if @search.present? &&
+    if @search.present?
       resources = resources.where("<%= (@search_able || []).map { |f| "LOWER(#{f}) LIKE :search" }.join(' OR ') %>", search: "%#{@search.to_s.downcase}%")
     end
 <% end -%>

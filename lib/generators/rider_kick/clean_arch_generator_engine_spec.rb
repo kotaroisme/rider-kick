@@ -81,8 +81,9 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
           instance.setup_configuration
 
           # Verifikasi models_path menggunakan engine
-          expect(RiderKick.configuration.models_path).to eq('app/models/core')
+          expect(RiderKick.configuration.models_path).to eq('engines/core/app/models/core/models')
           expect(RiderKick.configuration.engine_name).to eq('Core')
+          expect(RiderKick.configuration.domain_scope).to eq('core/')
         end
       end
     end
@@ -119,8 +120,9 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
           instance.setup_configuration
 
           # Verifikasi directory models dibuat dengan path engine
-          expect(Dir.exist?('app/models/admin')).to be true
-          expect(RiderKick.configuration.models_path).to eq('app/models/admin')
+          expect(Dir.exist?('engines/admin/app/models/admin')).to be true
+          expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
+          expect(RiderKick.configuration.domain_scope).to eq('admin/')
         end
       end
     end
@@ -185,7 +187,7 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
       end
     end
 
-    it 'generates class names with engine name for empty domain scope in engine' do
+    it 'generates class names with engine name for engine with default domain scope' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           # Create minimal engine structure for testing
@@ -193,7 +195,7 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
 
           # Reset configuration
           RiderKick.configuration.engine_name = 'Admin'
-          RiderKick.configuration.domain_scope = ''
+          RiderKick.configuration.domain_scope = 'admin/' # Engine-prefixed domain scope
 
           instance = klass.new([])
           opts = double('options', setup: true)
@@ -216,12 +218,12 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
           allow(instance).to receive(:setup_models)
           allow(instance).to receive(:say)
 
-          # Test domain_class_name method for engine
+          # Test domain_class_name method for engine with empty domain scope
           expect(instance.send(:domain_class_name)).to eq('Admin')
 
           # Test configuration paths
-          expect(RiderKick.configuration.domains_path).to eq('engines/admin/app/domains/')
-          expect(RiderKick.configuration.models_path).to eq('app/models/admin')
+          expect(RiderKick.configuration.domains_path).to eq('engines/admin/app/domains/admin/')
+          expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
         end
       end
     end
@@ -234,7 +236,7 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
 
           # Reset configuration
           RiderKick.configuration.engine_name = 'Admin'
-          RiderKick.configuration.domain_scope = 'core/'
+          RiderKick.configuration.domain_scope = 'admin/core/' # Engine-prefixed
 
           instance = klass.new([])
           opts = double('options', setup: true)
@@ -265,8 +267,8 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
           expect(instance.send(:domain_class_name_for_application_record)).to eq('Admin')
 
           # Test configuration paths - when both engine and domain specified, structure goes to engine domains
-          expect(RiderKick.configuration.domains_path).to eq('engines/admin/app/domains/core/')
-          expect(RiderKick.configuration.models_path).to eq('app/models/admin')
+          expect(RiderKick.configuration.domains_path).to eq('engines/admin/app/domains/admin/core/')
+          expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
         end
       end
     end
@@ -308,7 +310,7 @@ RSpec.describe 'rider_kick:clean_arch generator with engine option' do
 
           # Test configuration paths - should create structure in engine domains
           expect(RiderKick.configuration.domains_path).to eq('engines/my_engine/app/domains/admin/')
-          expect(RiderKick.configuration.models_path).to eq('app/models/my_engine')
+          expect(RiderKick.configuration.models_path).to eq('engines/my_engine/app/models/my_engine/models')
         end
       end
     end

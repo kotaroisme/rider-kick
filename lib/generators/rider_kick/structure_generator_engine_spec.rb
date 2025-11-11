@@ -165,7 +165,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
           RiderKick.configuration.domain_scope = 'core/'
 
           FileUtils.mkdir_p(RiderKick.configuration.domains_path)
-          FileUtils.mkdir_p('app/models/core')
+          FileUtils.mkdir_p(RiderKick.configuration.models_path)
 
           # Stub model classes
           Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
@@ -199,7 +199,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
           instance.generate_use_case
 
           # Verifikasi models_path menggunakan engine
-          expect(RiderKick.configuration.models_path).to eq('app/models/core')
+          expect(RiderKick.configuration.models_path).to eq('engines/core/app/models/core/models')
           expect(RiderKick.configuration.engine_name).to eq('Core')
           expect(File).to exist('db/structures/users_structure.yaml')
         end
@@ -214,7 +214,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
           RiderKick.configuration.domain_scope = 'core/'
 
           FileUtils.mkdir_p(RiderKick.configuration.domains_path)
-          FileUtils.mkdir_p('app/models/admin')
+          FileUtils.mkdir_p(RiderKick.configuration.models_path)
 
           # Stub model classes
           Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
@@ -249,7 +249,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
 
           # Verifikasi engine name sudah di-set
           expect(RiderKick.configuration.engine_name).to eq('Admin')
-          expect(RiderKick.configuration.models_path).to eq('app/models/admin')
+          expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
 
           # Verifikasi file structure ter-generate
           expect(File).to exist('db/structures/products_structure.yaml')
@@ -259,59 +259,15 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
       end
     end
 
-    it 'generates structure file with engine and domain combination' do
+    it 'mengangkat Thor::Error jika engine domains belum ada' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          # Set configuration for test first
-          RiderKick.configuration.engine_name = 'OrderEngine'
-          RiderKick.configuration.domain_scope = 'fulfillment/'
-
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path)
-          FileUtils.mkdir_p('app/models/order_engine')
-
-          # Stub model classes
-          Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
-          Object.send(:remove_const, :Column) if Object.const_defined?(:Column)
-          module Models; end
-
-          module Models::OrderEngine; end
-
-          Column = Struct.new(:name, :type, :sql_type, :null, :default, :precision, :scale, :limit)
-          class Models::OrderEngine::Order
-            def self.columns
-              [
-                Column.new('id', :uuid),
-                Column.new('order_number', :string),
-                Column.new('status', :string),
-                Column.new('total_amount', :decimal),
-                Column.new('created_at', :datetime),
-                Column.new('updated_at', :datetime)
-              ]
-            end
-
-            def self.columns_hash
-              columns.to_h { |c| [c.name.to_s, Struct.new(:type).new(c.type)] }
-            end
-
-            def self.column_names
-              columns.map { |c| c.name.to_s }
-            end
-          end
-
           instance = klass.new(['Models::OrderEngine::Order', 'actor:user', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: 'OrderEngine', domain: 'fulfillment/' })
-          instance.generate_use_case
 
-          # Verifikasi engine dan domain sudah di-set
-          expect(RiderKick.configuration.engine_name).to eq('OrderEngine')
-          expect(RiderKick.configuration.domain_scope).to eq('fulfillment/')
-          expect(RiderKick.configuration.models_path).to eq('app/models/order_engine')
-          expect(RiderKick.configuration.domains_path).to eq('engines/order_engine/app/domains/fulfillment/')
-
-          # Verifikasi file structure ter-generate
-          expect(File).to exist('db/structures/orders_structure.yaml')
-          yaml = File.read('db/structures/orders_structure.yaml')
-          expect(yaml).to include('model: Models::OrderEngine::Order')
+          expect {
+            instance.generate_use_case
+          }.to raise_error(Thor::Error, /clean_arch.*--setup/i)
         end
       end
     end

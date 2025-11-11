@@ -28,7 +28,10 @@ module RiderKick
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
-        RiderKick.configuration.domain_scope = options[:domain] || 'core/'
+        # Jika --engine dispecify, selalu ada scope engine nya
+        engine_prefix = options[:engine].underscore
+        domain_part = options[:domain] || ''
+        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
         say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
       elsif options[:domain].present?

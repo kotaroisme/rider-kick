@@ -102,8 +102,8 @@ module RiderKick
 
     def detect_models_path
       if @engine_name
-        # Engine: app/models/<engine_name>
-        File.join('app/models', @engine_name.underscore)
+        # Engine: engines/<engine_name>/app/models/<engine_name>/models
+        File.join('engines', @engine_name.underscore, 'app/models', @engine_name.underscore, 'models')
       else
         # Main app: app/models/models
         'app/models/models'

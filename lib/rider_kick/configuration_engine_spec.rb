@@ -84,12 +84,12 @@ RSpec.describe RiderKick::Configuration do
       end
     end
 
-    it 'returns app/models/<engine_name> when engine is set' do
+    it 'returns engines/<engine_name>/app/models/<engine_name>/models when engine is set' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           config = RiderKick::Configuration.new
           config.engine_name = 'Core'
-          expect(config.models_path).to eq('app/models/core')
+          expect(config.models_path).to eq('engines/core/app/models/core/models')
         end
       end
     end
@@ -103,7 +103,7 @@ RSpec.describe RiderKick::Configuration do
           expect(config.models_path).to eq('app/models/models')
 
           config.engine_name = 'Admin'
-          expect(config.models_path).to eq('app/models/admin')
+          expect(config.models_path).to eq('engines/admin/app/models/admin/models')
 
           config.engine_name = nil
           expect(config.models_path).to eq('app/models/models')

@@ -154,14 +154,13 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
         builder_spec = RiderKick.configuration.domains_path + '/builders/product_spec.rb'
         expect(File).to exist(builder_spec), 'Expected builder spec file to exist'
 
-        # Model spec
-        model_spec = 'spec/models/models/product_spec.rb'
+        # Model spec (sekarang sejajar dengan model di app/models/models/)
+        model_spec = 'app/models/models/product_spec.rb'
         expect(File).to exist(model_spec), 'Expected model spec file to exist'
 
         model_spec_content = File.read(model_spec)
         expect(model_spec_content).to include('require \'rails_helper\'')
         expect(model_spec_content).to include('RSpec.describe Models::Product')
-        expect(model_spec_content).to include('describe \'associations\'')
         expect(model_spec_content).to include('describe \'Active Storage attachments\'')
         expect(model_spec_content).to include('image') # single uploader
         expect(model_spec_content).to include('documents') # multiple uploader

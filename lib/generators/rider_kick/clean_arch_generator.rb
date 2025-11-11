@@ -59,12 +59,22 @@ module RiderKick
       scope = RiderKick.configuration.domain_scope.chomp('/')
 
       if RiderKick.configuration.engine_name.present?
-        # Engine context: always prefix with engine name
+        # Engine context: domain_scope always starts with engine name
         engine_prefix = RiderKick.configuration.engine_name.camelize
-        if scope.empty?
+        engine_underscored = RiderKick.configuration.engine_name.underscore
+
+        if scope == engine_underscored
+          # Default engine domain: engines/my_engine/app/domains/my_engine/
           engine_prefix
         else
-          "#{engine_prefix}::#{scope.split('/').map(&:camelize).join('::')}"
+          # Engine with sub-domain: engines/my_engine/app/domains/my_engine/admin/
+          # Remove engine prefix from scope and create namespace
+          sub_scope = scope.sub(/^#{engine_underscored}\//, '')
+          if sub_scope.empty?
+            engine_prefix
+          else
+            "#{engine_prefix}::#{sub_scope.split('/').map(&:camelize).join('::')}"
+          end
         end
       elsif scope.empty?
         # Main app context
@@ -96,7 +106,10 @@ module RiderKick
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
-        RiderKick.configuration.domain_scope = options[:domain] || ''
+        # Jika --engine dispecify, selalu ada scope engine nya
+        engine_prefix = options[:engine].underscore
+        domain_part = options[:domain] || ''
+        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
         say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
       elsif options[:domain].present?
@@ -210,7 +223,7 @@ module RiderKick
         template 'models/application_record.rb', File.join('app/models/application_record.rb')
       end
 
-      # Untuk engine, models path akan di app/models/<engine_name>
+      # Untuk engine, models path akan di engines/<engine_name>/app/models/<engine_name>/models
       # Untuk main app, models path akan di app/models/models
       models_dir = RiderKick.configuration.models_path
       empty_directory models_dir unless Dir.exist?(models_dir)

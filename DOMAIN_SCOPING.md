@@ -7,7 +7,9 @@ RiderKick sekarang mendukung **domain scoping** dengan `--domain` option, memung
 ## Fitur Utama
 
 - **Domain Scoping**: Organize domain files ke dalam folder terpisah (core/, admin/, api/v1/, dll.)
-- **Engine Support**: Generate domain files dalam Rails engines
+- **Engine Support**: Generate domain files dalam Rails engines dengan path models yang benar
+- **Enhanced Model Specs**: Model specs dengan ekspektasi type kolom database dan Active Storage
+- **Consistent File Placement**: Model specs ditempatkan sejajar dengan model files
 - **Backward Compatible**: Domain default `core/` tetap bekerja tanpa perubahan
 
 ## Cara Penggunaan
@@ -35,7 +37,7 @@ bin/rails generate rider_kick:clean_arch --setup --domain mobile/
 ### 3. Setup dalam Rails Engine
 
 ```bash
-# Engine dengan domain default
+# Engine dengan domain default (akan menggunakan engine name sebagai domain)
 bin/rails generate rider_kick:clean_arch --setup --engine MyEngine
 
 # Engine dengan domain khusus
@@ -100,18 +102,75 @@ engines/
   my_engine/
     app/
       domains/
-        core/       # --engine MyEngine --domain core/
+        my_engine/        # --engine MyEngine (scope: my_engine/)
           entities/
           builders/
           repositories/
           use_cases/
           utils/
-        admin/      # --engine MyEngine --domain admin/
-          entities/
-          builders/
-          repositories/
-          use_cases/
-          utils/
+        my_engine/        # --engine MyEngine --domain admin/ (scope: my_engine/admin/)
+          admin/
+            entities/
+            builders/
+            repositories/
+            use_cases/
+            utils/
+      models/
+        my_engine/        # Engine models directory
+          application_record.rb
+          models/         # Engine models subdirectory
+            models.rb
+            company.rb    # Model: Models::MyEngine::Company
+            company_spec.rb # Model spec with column type expectations
+```
+
+### Model Specs
+
+RiderKick menghasilkan model specs yang comprehensive dengan ekspektasi untuk:
+
+#### 1. Database Column Types
+```ruby
+describe 'database columns' do
+  it 'has id column' do
+    expect(Models::Company.column_names).to include('id')
+  end
+
+  it 'has id column of type uuid' do
+    column = Models::Company.columns.find { |c| c.name == 'id' }
+    expect(column&.type).to eq(:uuid)
+  end
+
+  it 'has name column of type string' do
+    column = Models::Company.columns.find { |c| c.name == 'name' }
+    expect(column&.type).to eq(:string)
+  end
+end
+```
+
+#### 2. Active Storage Attachments
+```ruby
+describe 'Active Storage attachments', :aggregate_failures do
+  it 'has one logo attached' do
+    expect(Models::Company.new.logo).to be_an_instance_of(ActiveStorage::Attached::One)
+  end
+
+  it 'can attach logo' do
+    company = Models::Company.new
+    company.logo.attach(
+      io: StringIO.new('test'),
+      filename: 'logo.jpg',
+      content_type: 'image/jpeg'
+    )
+    expect(company.logo).to be_attached
+  end
+end
+```
+
+#### 3. Enum Definitions
+```ruby
+describe 'enums' do
+  it { is_expected.to define_enum_for(:status).with_values(['active', 'inactive', 'pending']) }
+end
 ```
 
 ## Contoh Lengkap Workflow
@@ -233,7 +292,7 @@ rails generate rider_kick:clean_arch --setup --domain admin/
 # Engine - domain default
 rails generate rider_kick:clean_arch --setup --engine MyEngine
 
-# Engine - domain khusus
+# Engine - domain khusus (akan menggunakan scope: my_engine/mobile/)
 rails generate rider_kick:clean_arch --setup --engine MyEngine --domain mobile/
 ```
 
@@ -317,7 +376,7 @@ rails generate rider_kick:factory Models::Product scope:admin
 - **Domain**: Untuk mengelompokkan related business logic dalam satu aplikasi/engine
 
 ```bash
-# Engine dengan multiple domains
+# Engine dengan multiple domains (akan menggunakan scope yang di-prefix dengan engine name)
 rails generate rider_kick:clean_arch --setup --engine OrderEngine --domain core/
 rails generate rider_kick:clean_arch --setup --engine OrderEngine --domain fulfillment/
 ```
@@ -421,7 +480,15 @@ end
 
 ### Q: Bagaimana dengan RSpec files?
 
-**A:** RSpec files akan di-generate di path yang sama dengan code files mereka. Jika Anda menggunakan `--domain admin/`, spec files akan di `app/domains/admin/.../*_spec.rb`
+**A:** RSpec files akan di-generate di path yang sama dengan code files mereka:
+- **Use case, repository, builder, entity specs**: `app/domains/.../*_spec.rb`
+- **Model specs**: Ditempatkan sejajar dengan model files di `app/models/.../*_spec.rb` (untuk main app) atau `engines/<engine>/app/models/<engine>/models/*_spec.rb` (untuk engine)
+
+Model specs sekarang menyertakan ekspektasi untuk:
+- Keberadaan kolom database
+- **Type kolom database** (string, integer, decimal, datetime, dll.)
+- Active Storage attachments (jika ada)
+- Enum definitions (jika ada)
 
 ### Q: Apakah backward compatible?
 
@@ -430,6 +497,74 @@ end
 ### Q: Bisakah saya rename domain setelah generate?
 
 **A:** Tidak direkomendasikan. Lebih baik regenerate dengan domain yang benar. Jika perlu rename, Anda harus update semua module names, require statements, dan references.
+
+## Ringkasan Perubahan Terbaru
+
+### ✅ Path Models Engine yang Benar
+
+**Sebelum:**
+```
+engines/my_engine/app/models/my_engine/  # ❌ Wrong
+```
+
+**Sesudah:**
+```
+engines/my_engine/app/models/my_engine/models/  # ✅ Correct
+```
+
+### ✅ Model Spec Placement
+
+**Model specs** sekarang ditempatkan **sejajar dengan model files**:
+
+| Scenario | Model Location | Spec Location |
+|----------|----------------|---------------|
+| Main App | `app/models/models/user.rb` | `app/models/models/user_spec.rb` |
+| Engine | `engines/my_engine/app/models/my_engine/models/company.rb` | `engines/my_engine/app/models/my_engine/models/company_spec.rb` |
+
+### ✅ Enhanced Model Specs
+
+Model specs sekarang menyertakan ekspektasi comprehensive untuk:
+
+1. **Database Column Existence**: Verifikasi kolom ada di schema
+2. **Column Types**: Ekspektasi eksplisit untuk type kolom (`:string`, `:integer`, `:decimal`, dll.)
+3. **Active Storage Attachments**: Test untuk single/multiple file uploads
+4. **Enum Definitions**: Validasi enum values jika ada
+
+### ✅ Domain Scoping Namespace Rules
+
+| Command | Domain Scope | Namespace Pattern |
+|---------|-------------|-------------------|
+| `rails g rider_kick:clean_arch --setup` | `core/` | `Core::*` |
+| `rails g rider_kick:clean_arch --setup --domain admin/` | `admin/` | `Admin::*` |
+| `rails g rider_kick:clean_arch --setup --engine MyEngine` | `my_engine/` | `MyEngine::*` |
+| `rails g rider_kick:clean_arch --setup --engine MyEngine --domain admin/` | `my_engine/admin/` | `MyEngine::Admin::*` |
+
+### ✅ File Structure Summary
+
+```
+# Main App
+app/
+├── domains/core/          # Domain scope
+│   ├── entities/user.rb   # Core::Entities::User
+│   ├── builders/user.rb   # Core::Builders::User
+│   └── use_cases/...      # Core::UseCases::*
+└── models/models/
+    ├── user.rb            # Models::User
+    └── user_spec.rb       # Model spec with column types
+
+# Engine
+engines/my_engine/
+├── app/
+│   ├── domains/my_engine/ # Engine + domain scope
+│   │   ├── entities/company.rb    # MyEngine::Entities::Company
+│   │   ├── builders/company.rb    # MyEngine::Builders::Company
+│   │   └── use_cases/...          # MyEngine::UseCases::*
+│   └── models/my_engine/
+│       ├── application_record.rb
+│       └── models/
+│           ├── company.rb          # Models::MyEngine::Company
+│           └── company_spec.rb     # Model spec with column types
+```
 
 ## Examples dalam Gem Source
 

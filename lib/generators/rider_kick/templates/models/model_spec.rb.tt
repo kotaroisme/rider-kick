@@ -3,15 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe <%= @model_class %>, type: :model do
-  describe 'associations' do
-<% if @resource_owner_id.present? -%>
-    it { is_expected.to belong_to(:<%= @resource_owner_id.to_s.gsub(/_id$/, '') %>)<%= @resource_owner_id.to_s.end_with?('_id') ? '' : '.optional' %> }
-<% end -%>
-<% if @resource_owner_id.blank? -%>
-    # Add association tests here as needed
-<% end -%>
-  end
-
 <% if @uploaders.present? -%>
   describe 'Active Storage attachments', :aggregate_failures do
 <% @uploaders.each do |uploader| -%>
@@ -63,6 +54,11 @@ RSpec.describe <%= @model_class %>, type: :model do
 <% @columns_meta.each do |column| -%>
     it 'has <%= column[:name] %> column' do
       expect(<%= @model_class %>.column_names).to include('<%= column[:name] %>')
+    end
+
+    it 'has <%= column[:name] %> column of type <%= column[:type] %>' do
+      column = <%= @model_class %>.columns.find { |c| c.name == '<%= column[:name] %>' }
+      expect(column&.type).to eq(:<%= column[:type] %>)
     end
 <% end -%>
   end

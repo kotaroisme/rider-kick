@@ -39,17 +39,27 @@ module RiderKick
 
     def domain_class_name
       # Convert domain scope to class name
-      # Engine: "<Engine>::<Domain>::" or "<Engine>::" for root domain
-      # Main app: "<AppName>::" for root domain, "<Domain>::" for scoped domain
+      # Engine: "<Engine>" for ApplicationRecord, "<Engine>::<Domain>" for other classes
+      # Main app: "" for ApplicationRecord, "<AppName>" for root domain, "<Domain>" for scoped domain
       scope = RiderKick.configuration.domain_scope.chomp('/')
 
       if RiderKick.configuration.engine_name.present?
-        # Engine context: always prefix with engine name
+        # Engine context: domain_scope always starts with engine name
         engine_prefix = RiderKick.configuration.engine_name.camelize
-        if scope.empty?
+        engine_underscored = RiderKick.configuration.engine_name.underscore
+
+        if scope == engine_underscored
+          # Default engine domain: engines/my_engine/app/domains/my_engine/
           engine_prefix
         else
-          "#{engine_prefix}::#{scope.split('/').map(&:camelize).join('::')}"
+          # Engine with sub-domain: engines/my_engine/app/domains/my_engine/admin/
+          # Remove engine prefix from scope and create namespace
+          sub_scope = scope.sub(/^#{engine_underscored}\//, '')
+          if sub_scope.empty?
+            engine_prefix
+          else
+            "#{engine_prefix}::#{sub_scope.split('/').map(&:camelize).join('::')}"
+          end
         end
       elsif scope.empty?
         # Main app context
@@ -68,7 +78,10 @@ module RiderKick
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
-        RiderKick.configuration.domain_scope = options[:domain] || ''
+        # Jika --engine dispecify, selalu ada scope engine nya
+        engine_prefix = options[:engine].underscore
+        domain_part = options[:domain] || ''
+        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
         say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
       elsif options[:domain].present?
@@ -345,8 +358,8 @@ module RiderKick
 
     def generate_model_spec
       model_spec_path = model_file_path(@model_class, @variable_subject).gsub('.rb', '_spec.rb')
-      # Place spec in spec/models directory instead of app/models
-      model_spec_path = model_spec_path.gsub('app/models', 'spec/models')
+      # Place spec alongside the model file (same directory)
+      # model_spec_path sudah berisi path lengkap ke app/models/.../_spec.rb
 
       template 'models/model_spec.rb.tt', model_spec_path
     end
