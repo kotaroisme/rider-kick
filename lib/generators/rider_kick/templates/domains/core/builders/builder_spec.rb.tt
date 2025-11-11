@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Core::Builders::<%= @subject_class %>, type: :builder do
+RSpec.describe <%= domain_class_name %>::Builders::<%= @subject_class %>, type: :builder do
   describe '#build' do
     let(:<%= @variable_subject %>) do
       ClassStubber::Model.new(
@@ -51,7 +51,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
     it 'builds entity from model' do
       entity = builder.build
 
-      expect(entity).to be_a(Core::Entities::<%= @subject_class %>)
+      expect(entity).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
       expect(entity.id).to eq('test-id-123')
 <% @entity_db_fields.first(2).each do |field| -%>
 <% column_meta = get_column_meta(field) -%>
@@ -170,7 +170,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 
     it 'validates entity type schema definitions', :aggregate_failures do
       # Verify entity has correct Dry::Types definitions
-      schema = Core::Entities::<%= @subject_class %>.schema
+      schema = <%= domain_class_name %>::Entities::<%= @subject_class %>.schema
       
       # ID must be required (not optional)
       id_key = schema.key(:id)

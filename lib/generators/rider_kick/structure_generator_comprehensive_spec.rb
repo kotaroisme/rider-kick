@@ -60,12 +60,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates complete structure file with all sections' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets', 'search_able:title,body', 'resource_owner_id:account_id'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets', 'search_able:title,body', 'resource_owner_id:account_id', 'resource_owner:account'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -79,6 +79,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
           expect(parsed['resource_name']).to eq('articles')
           expect(parsed['actor']).to eq('owner')
           expect(parsed['resource_owner_id']).to eq('account_id')
+          expect(parsed['resource_owner']).to eq('account')
         end
       end
     end
@@ -86,12 +87,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates correct fields section' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -109,13 +110,13 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates uploaders section with inline empty array format' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
           # Test with empty uploaders
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -132,12 +133,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates uploaders section with uploader definitions' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -155,13 +156,13 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates search_able section with inline empty array format' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
           # Test with empty search_able
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -176,12 +177,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates search_able section with searchable fields' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'search_able:title,body'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'search_able:title,body', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -198,12 +199,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates schema section with all column metadata' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -226,12 +227,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates schema foreign_keys with inline empty array format' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -246,12 +247,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates schema indexes with inline empty array format' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -266,12 +267,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates schema enums with empty object format' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -286,12 +287,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates controllers section with list_fields, show_fields, and form_fields' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -316,7 +317,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates controllers section with inline empty arrays when empty' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           columns = [
@@ -326,7 +327,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
           ]
           create_test_model(class_name: 'Article', columns: columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -345,12 +346,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates domains section with all action contracts' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'search_able:title'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'search_able:title', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -384,12 +385,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates action_fetch_by_id contract with required id and resource_owner_id' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id', 'resource_owner:account'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -406,12 +407,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates action_create contract with all fields and resource_owner_id' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id', 'uploaders:images'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id', 'uploaders:images', 'resource_owner:account'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -429,12 +430,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates action_update contract with required id' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -451,12 +452,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates action_destroy contract with required id and resource_owner_id' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner_id:account_id', 'resource_owner:account'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -473,7 +474,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates domains contracts with inline empty arrays when empty' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           columns = [
@@ -483,7 +484,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
           ]
           create_test_model(class_name: 'Article', columns: columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -499,12 +500,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates entity section with skipped_fields and db_attributes' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -522,7 +523,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates entity db_attributes with inline empty array when empty' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           columns = [
@@ -532,7 +533,7 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
           ]
           create_test_model(class_name: 'Article', columns: columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -547,12 +548,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates valid YAML that can be parsed without errors' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets', 'search_able:title,body', 'resource_owner_id:account_id'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images,assets', 'search_able:title,body', 'resource_owner_id:account_id', 'resource_owner:account'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 
@@ -570,12 +571,12 @@ RSpec.describe 'rider_kick:structure generator (comprehensive)' do
     it 'generates correct YAML indentation (2 spaces per level)' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+          FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
           FileUtils.mkdir_p('app/models/models')
 
           create_test_model(class_name: 'Article', columns: create_test_columns)
 
-          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images'])
+          instance = klass.new(['Models::Article', 'actor:owner', 'uploaders:images', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
           instance.generate_use_case
 

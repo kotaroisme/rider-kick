@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rider_kick/types'
+require_relative '../types'
 require 'dry/struct'
 
 module RiderKick

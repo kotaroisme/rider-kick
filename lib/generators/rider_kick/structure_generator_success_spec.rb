@@ -12,7 +12,7 @@ RSpec.describe 'rider_kick:structure generator (success)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # 1) siapkan struktur minimal Clean Arch
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
         FileUtils.mkdir_p('app/models/models')
 
         # 2) stub namespace & model + metadata kolom
@@ -42,7 +42,7 @@ RSpec.describe 'rider_kick:structure generator (success)' do
         end
 
         # 3) jalankan generator
-        instance = klass.new(['Models::User', 'actor:owner'])  # ← pakai token
+        instance = klass.new(['Models::User', 'actor:owner', 'resource_owner:account', 'resource_owner_id:account_id'])  # ← pakai token
         instance.generate_use_case
 
         # 4) verifikasi file output
@@ -51,6 +51,8 @@ RSpec.describe 'rider_kick:structure generator (success)' do
         expect(yaml).to include('model: Models::User')
         expect(yaml).to include('resource_name: users')
         expect(yaml).to include('actor: owner')
+        expect(yaml).to include('resource_owner: account')
+        expect(yaml).to include('resource_owner_id: account_id')
         expect(yaml).to include('- name')          # field dari kolom
         expect(yaml).to include('- price')
       end

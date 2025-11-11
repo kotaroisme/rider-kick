@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::UseCases::Contract::Default
+class <%= domain_class_name %>::UseCases::Contract::Default
   def call
     default
   end

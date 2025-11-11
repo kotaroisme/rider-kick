@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::AbstractRepository
   include Dry::Monads[:result, :do]
 
   def http
-    extend(Core::Utils::RequestMethods)
+    extend(<%= domain_class_name %>::Utils::RequestMethods)
   end
 
   def error_messages_for(record)
@@ -14,7 +14,7 @@ class Core::Repositories::AbstractRepository
   def build_errors(resource)
     errors = []
     resource.errors.each do |error|
-      errors << Core::Builders::Error.new(error.as_json).build
+      errors << <%= domain_class_name %>::Builders::Error.new(error.as_json).build
     end
     errors
   end
@@ -28,7 +28,7 @@ class Core::Repositories::AbstractRepository
   end
 
   def paginate!(pagy)
-    Core::Builders::Pagination.new(pagy).build
+    <%= domain_class_name %>::Builders::Pagination.new(pagy).build
   end
 
   def build_pagination_variable!(params)

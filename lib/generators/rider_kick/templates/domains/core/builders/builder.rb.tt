@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class Core::Builders::<%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
-  acts_as_builder_for_entity Core::Entities::<%= @subject_class%>
+class <%= domain_class_name %>::Builders::<%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity <%= domain_class_name %>::Entities::<%= @subject_class%>
 
 <% if @uploaders.present? -%>
   def attributes_for_entity

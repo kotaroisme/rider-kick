@@ -2,10 +2,10 @@
 
 require 'rails_helper'
 
-RSpec.describe Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>, type: :use_case do
+RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>, type: :use_case do
   describe '#call' do
-    let(:repository) { instance_double(Core::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
-    let(:entity) { instance_double(Core::Entities::<%= @subject_class %>) }
+    let(:repository) { instance_double(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
+    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
     let(:<%= @variable_subject %>_id) { 'test-id-123' }
     
     let(:valid_params) do
@@ -16,7 +16,7 @@ RSpec.describe Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_
     end
 
     before do
-      allow(Core::Repositories::<%= @scope_class%>::<%= @repository_class%>)
+      allow(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>)
         .to receive(:new)
         .with(params: anything)
         .and_return(repository)
@@ -47,7 +47,7 @@ RSpec.describe Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_
 
     context 'when <%= @variable_subject %> is not found' do
       it 'returns failure', :aggregate_failures do
-        error = instance_double(Core::Entities::Error)
+        error = instance_double(<%= domain_class_name %>::Entities::Error)
         allow(repository).to receive(:call).with(builder: true).and_return(Dry::Monads::Failure(error))
 
         contract = described_class.contract!(valid_params)

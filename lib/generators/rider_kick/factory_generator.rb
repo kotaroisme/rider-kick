@@ -3,6 +3,7 @@
 require 'rails/generators'
 require 'active_support/inflector'
 require 'faker'
+require_relative '../../rider-kick'
 
 module RiderKick
   class FactoryGenerator < Rails::Generators::Base

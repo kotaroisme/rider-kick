@@ -67,7 +67,7 @@ RSpec.describe 'rider_kick:scaffold list spec generation' do
 
         instance.generate_use_case
 
-        list_spec_file = 'app/domains/core/repositories/articles/list_article_spec.rb'
+        list_spec_file = 'app/domains/repositories/articles/list_article_spec.rb'
         expect(File.exist?(list_spec_file)).to be true
 
         content = File.read(list_spec_file)
@@ -136,7 +136,7 @@ RSpec.describe 'rider_kick:scaffold list spec generation' do
 
         instance.generate_use_case
 
-        list_spec_file = 'app/domains/core/repositories/products/list_product_spec.rb'
+        list_spec_file = 'app/domains/repositories/products/list_product_spec.rb'
         expect(File.exist?(list_spec_file)).to be true
 
         content = File.read(list_spec_file)

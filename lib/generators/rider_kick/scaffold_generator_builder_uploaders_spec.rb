@@ -28,6 +28,8 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
           model: Models::User
           resource_name: users
           actor: owner
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders: [{ name: 'avatar', type: 'single' }, { name: 'images', type: 'multiple' }]
           search_able: []
           domains:
@@ -41,7 +43,7 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
 
         klass.new(['users']).generate_use_case
 
-        builder = File.read(RiderKick.configuration.domains_path + '/core/builders/user.rb')
+        builder = File.read(RiderKick.configuration.domains_path + '/builders/user.rb')
         # singular -> satu URL string
         expect(builder).to include('def with_avatar_url(model)')
         expect(builder).to include('model.avatar.url')
@@ -77,6 +79,8 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
           model: Models::User
           resource_name: users
           actor: owner
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders: [{ name: 'avatar', type: 'single' }, { name: 'images', type: 'multiple' }]
           search_able: []
           domains:
@@ -126,6 +130,8 @@ RSpec.describe 'rider_kick:scaffold builder (uploaders)' do
           model: Models::User
           resource_name: users
           actor: owner
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders: [{ name: 'avatar', type: 'single' }, { name: 'images', type: 'multiple' }]
           search_able: []
           domains:

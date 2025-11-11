@@ -6,6 +6,8 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/enumerable'
 require 'hashie'
 require 'yaml'
+require_relative '../../rider-kick'
+
 module RiderKick
   class ScaffoldGenerator < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
@@ -13,13 +15,14 @@ module RiderKick
     argument :arg_structure, type: :string, default: '', banner: ''
     argument :arg_scope, type: :hash, default: {}, banner: 'scope:dashboard'
     class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
+    class_option :domain, type: :string, default: 'core/', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def generate_use_case
       configure_engine
       validation!
       setup_variables
-      validate_repository_filters!   # ← NEW: validate filter fields exist
-      validate_entity_fields!        # ← NEW: validate entity db_attributes exist
+      validate_repository_filters!   # ← validate filter fields exist (after setup_variables)
+      validate_entity_fields!        # ← validate entity db_attributes exist (after setup_variables)
 
       generate_files('create')
       generate_files('update')
@@ -34,14 +37,36 @@ module RiderKick
 
     private
 
+    def domain_class_name
+      # Convert domain scope to class name
+      # "core/" -> "Core", "admin/" -> "Admin", "api/v1/" -> "Api::V1"
+      scope = RiderKick.configuration.domain_scope.chomp('/')
+      scope.split('/').map(&:camelize).join('::')
+    end
+
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
+        RiderKick.configuration.domain_scope = options[:domain] || 'core/'
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
+        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
+      elsif options[:domain].present?
+        # Jika hanya --domain yang dispecify, gunakan konfigurasi existing
+        RiderKick.configuration.domain_scope = options[:domain]
+        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
       else
-        # Pastikan engine_name nil jika tidak di-specify, sehingga menggunakan main app
-        RiderKick.configuration.engine_name = nil
-        say 'Using main app (no engine specified)', :blue
+        # Jika tidak ada options, pertahankan konfigurasi existing
+        # Hanya tampilkan pesan jika belum pernah di-set
+        unless @engine_configured
+          if RiderKick.configuration.engine_name
+            say "Using engine: #{RiderKick.configuration.engine_name}", :green
+            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
+          else
+            say 'Using main app (no engine specified)', :blue
+            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
+          end
+          @engine_configured = true
+        end
       end
     end
 
@@ -209,8 +234,8 @@ module RiderKick
       @repository_class = repository_filename.camelize
 
       # Generate code files
-      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
-      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'core', 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
+      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
+      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
 
       # Generate spec files
       generate_use_case_spec(action, suffix, use_case_filename)
@@ -218,8 +243,8 @@ module RiderKick
     end
 
     def copy_builder_and_entity_files
-      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, 'core', 'builders', "#{@variable_subject}.rb")
-      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, 'core', 'entities', "#{@variable_subject}.rb")
+      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}.rb")
+      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, 'entities', "#{@variable_subject}.rb")
     end
 
     def contract_fields
@@ -268,7 +293,7 @@ module RiderKick
 
     def generate_use_case_spec(action, suffix, use_case_filename)
       template_name = "domains/core/use_cases/#{action + suffix}_spec.rb.tt"
-      spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
+      spec_path = File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
 
       if File.exist?(File.join(self.class.source_root, template_name))
         template template_name, spec_path
@@ -279,7 +304,7 @@ module RiderKick
 
     def generate_repository_spec(action, suffix, repository_filename)
       template_name = "domains/core/repositories/#{action + suffix}_spec.rb.tt"
-      spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'repositories', @scope_path.to_s, "#{repository_filename}_spec.rb")
+      spec_path = File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}_spec.rb")
 
       if File.exist?(File.join(self.class.source_root, template_name))
         template template_name, spec_path
@@ -290,7 +315,7 @@ module RiderKick
 
     def generate_spec_files
       # Generate builder spec (covers entity validation too)
-      builder_spec_path = File.join(RiderKick.configuration.domains_path, 'core', 'builders', "#{@variable_subject}_spec.rb")
+      builder_spec_path = File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}_spec.rb")
       template 'domains/core/builders/builder_spec.rb.tt', builder_spec_path
 
       # Generate model spec

@@ -4,9 +4,10 @@
 
 model: <%= @model_class %>
 resource_name: <%= @scope_path %>
-resource_owner_id: <%= @resource_owner_id || 'nil' %> # account_id
-resource_owner: <%= @resource_owner || 'nil' %> # account
-actor: <%= @actor %>
+resource_owner_id: <%= @resource_owner_id %> # account_id
+resource_owner: <%= @resource_owner %> # account
+actor: <%= @actor %> # user
+actor_id: <%= @actor_id %> # user_id
 
 fields:
 <% @fields.each do |f| -%>

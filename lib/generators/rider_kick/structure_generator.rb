@@ -5,6 +5,7 @@ require 'active_support/inflector'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/enumerable'
 require 'hashie'
+require_relative '../../rider-kick'
 
 module RiderKick
   class Structure < Rails::Generators::Base
@@ -13,6 +14,7 @@ module RiderKick
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
     argument :arg_settings, type: :hash, default: {}, banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
     class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
+    class_option :domain, type: :string, default: 'core/', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def generate_use_case
       configure_engine
@@ -26,11 +28,26 @@ module RiderKick
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
+        RiderKick.configuration.domain_scope = options[:domain] || 'core/'
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
+        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
+      elsif options[:domain].present?
+        # Jika hanya --domain yang dispecify, gunakan konfigurasi existing
+        RiderKick.configuration.domain_scope = options[:domain]
+        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
       else
-        # Pastikan engine_name nil jika tidak di-specify, sehingga menggunakan main app
-        RiderKick.configuration.engine_name = nil
-        say 'Using main app (no engine specified)', :blue
+        # Jika tidak ada options, pertahankan konfigurasi existing
+        # Hanya tampilkan pesan jika belum pernah di-set
+        unless @engine_configured
+          if RiderKick.configuration.engine_name
+            say "Using engine: #{RiderKick.configuration.engine_name}", :green
+            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
+          else
+            say 'Using main app (no engine specified)', :blue
+            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
+          end
+          @engine_configured = true
+        end
       end
     end
 
@@ -38,6 +55,23 @@ module RiderKick
       unless Dir.exist?(RiderKick.configuration.domains_path)
         say 'Error must create clean arch structure first!'
         raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
+      end
+
+      # Pastikan parameter wajib tersedia
+      actor = arg_settings['actor'].to_s.strip
+      resource_owner = arg_settings['resource_owner'].to_s.strip
+      resource_owner_id = arg_settings['resource_owner_id'].to_s.strip
+
+      if actor.blank?
+        raise Thor::Error, "Missing required setting: actor. Contoh: 'actor:user'"
+      end
+
+      if resource_owner.blank?
+        raise Thor::Error, "Missing required setting: resource_owner. Contoh: 'resource_owner:account'"
+      end
+
+      if resource_owner_id.blank?
+        raise Thor::Error, "Missing required setting: resource_owner_id. Contoh: 'resource_owner_id:account_id'"
       end
     end
 
@@ -49,8 +83,10 @@ module RiderKick
       @scope_class        = @scope_path.camelize
       @fields             = contract_fields
       @uploaders          = uploaders # Ini array string dari argumen
-      @actor              = arg_settings['actor'].downcase
+      @actor              = arg_settings['actor'].to_s.downcase
+      @actor_id           = (@actor.present? ? arg_settings['actor'].to_s.downcase + '_id' : '')
 
+      @resource_owner     = arg_settings['resource_owner'].to_s.presence
       @resource_owner_id  = arg_settings['resource_owner_id'].to_s.presence
       @columns            = columns_meta
 

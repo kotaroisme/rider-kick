@@ -144,8 +144,8 @@ bin/rails generate rider_kick:structure Models::TestModel actor:user
 bin/rails generate rider_kick:scaffold test_models
 
 # Check generated spec files
-ls app/domains/core/builders/test_model_spec.rb
-ls app/domains/core/entities/test_model_spec.rb
+ls app/domains/core/builders/test_model_spec.rb  # or app/domains/<domain>/builders/test_model_spec.rb
+ls app/domains/core/entities/test_model_spec.rb   # or app/domains/<domain>/entities/test_model_spec.rb
 ```
 
 ## Breaking Changes
@@ -228,5 +228,6 @@ Jika Anda mengalami masalah saat upgrade, silakan:
 1. Check [SPEC_GENERATION.md](SPEC_GENERATION.md) untuk dokumentasi lengkap
 2. Check issue tracker di GitHub
 3. Create new issue dengan detail error message
+
 
 

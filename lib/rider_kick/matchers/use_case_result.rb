@@ -1,7 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
-require 'rider_kick/entities/failure_details'
+require_relative '../entities/failure_details'
 require 'dry-matcher'
 require 'dry/monads/all'
 

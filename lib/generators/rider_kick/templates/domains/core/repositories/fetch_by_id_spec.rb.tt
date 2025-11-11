@@ -2,10 +2,10 @@
 
 require 'rails_helper'
 
-RSpec.describe Core::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
   describe '#call' do
-    let(:builder) { instance_double(Core::Builders::<%= @subject_class %>) }
-    let(:entity) { instance_double(Core::Entities::<%= @subject_class %>) }
+    let(:builder) { instance_double(<%= domain_class_name %>::Builders::<%= @subject_class %>) }
+    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
     let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
     let(:<%= @variable_subject %>_id) { 'test-id-123' }
     
@@ -19,7 +19,7 @@ RSpec.describe Core::Repositories::<%= @scope_class %>::<%= @repository_class %>
     subject(:repository) { described_class.new(params: valid_params) }
 
     before do
-      allow(Core::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
+      allow(<%= domain_class_name %>::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
       allow(builder).to receive(:build).and_return(entity)
     end
 

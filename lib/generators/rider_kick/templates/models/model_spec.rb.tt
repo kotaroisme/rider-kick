@@ -50,10 +50,6 @@ RSpec.describe <%= @model_class %>, type: :model do
   end
 
 <% end -%>
-  describe 'validations' do
-    # Add validation tests here based on your model requirements
-    it { is_expected.to validate_presence_of(:id).on(:update) }
-  end
 
 <% if @structure.schema&.enums.present? -%>
   describe 'enums' do
@@ -70,10 +66,7 @@ RSpec.describe <%= @model_class %>, type: :model do
     end
 <% end -%>
   end
-
-  describe 'callbacks' do
-    # Add callback tests here if your model has callbacks
-  end
 end
+
 
 

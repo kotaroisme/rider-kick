@@ -9,33 +9,52 @@ Gem RiderKick sekarang secara otomatis men-generate RSpec files untuk setiap cod
 Ketika Anda menjalankan `rider_kick:scaffold` generator, generator akan men-generate:
 
 ### Code Files (sudah ada):
-- Use Cases: `app/domains/core/use_cases/<scope>/<resource>/<actor>_<action>_<model>.rb`
-- Repositories: `app/domains/core/repositories/<resource>/<action>_<model>.rb`
-- Builder: `app/domains/core/builders/<model>.rb`
-- Entity: `app/domains/core/entities/<model>.rb`
+- Use Cases: `app/domains/<domain>/use_cases/<scope>/<resource>/<actor>_<action>_<model>.rb`
+- Repositories: `app/domains/<domain>/repositories/<resource>/<action>_<model>.rb`
+- Builder: `app/domains/<domain>/builders/<model>.rb`
+- Entity: `app/domains/<domain>/entities/<model>.rb`
 
 ### Spec Files (BARU):
-- Use Case Specs: `app/domains/core/use_cases/<scope>/<resource>/<actor>_<action>_<model>_spec.rb`
-- Repository Specs: `app/domains/core/repositories/<resource>/<action>_<model>_spec.rb`
-- Builder Spec: `app/domains/core/builders/<model>_spec.rb`
-- Entity Spec: `app/domains/core/entities/<model>_spec.rb`
+- Use Case Specs: `app/domains/<domain>/use_cases/<scope>/<resource>/<actor>_<action>_<model>_spec.rb`
+- Repository Specs: `app/domains/<domain>/repositories/<resource>/<action>_<model>_spec.rb`
+- Builder Spec: `app/domains/<domain>/builders/<model>_spec.rb`
+- Entity Spec: `app/domains/<domain>/entities/<model>_spec.rb`
+
+**Catatan:** `<domain>` default adalah `core/`, bisa diubah dengan `--domain` option.
 
 ## Contoh Penggunaan
 
-### 1. Generate Structure
+### 1. Setup Domain Structure
 ```bash
-bin/rails generate rider_kick:structure Models::Product actor:user uploaders:image,documents
+# Setup dengan domain default
+bin/rails generate rider_kick:clean_arch --setup
+
+# Atau setup dengan domain khusus
+bin/rails generate rider_kick:clean_arch --setup --domain admin/
 ```
 
-### 2. Generate Scaffold (dengan RSpec)
+### 2. Generate Structure
 ```bash
+# Structure dengan domain default
+bin/rails generate rider_kick:structure Models::Product actor:user uploaders:image,documents
+
+# Structure dengan domain khusus
+bin/rails generate rider_kick:structure Models::Product actor:user uploaders:image,documents --domain admin/
+```
+
+### 3. Generate Scaffold (dengan RSpec)
+```bash
+# Scaffold dengan domain default
 bin/rails generate rider_kick:scaffold products
+
+# Scaffold dengan domain khusus
+bin/rails generate rider_kick:scaffold products --domain admin/
 ```
 
 ### Output
 Generator akan men-generate file-file berikut:
 
-**Code Files:**
+**Code Files (Domain Default - `core/`):**
 ```
 app/domains/core/
 ├── use_cases/products/
@@ -56,9 +75,78 @@ app/domains/core/
     └── product.rb
 ```
 
-**Spec Files:**
+**Code Files (Domain Custom - `admin/`):**
+```bash
+bin/rails generate rider_kick:scaffold products --domain admin/
+```
+```
+app/domains/admin/
+├── use_cases/products/
+│   ├── user_create_product.rb
+│   ├── user_update_product.rb
+│   ├── user_list_product.rb
+│   ├── user_destroy_product.rb
+│   └── user_fetch_product_by_id.rb
+├── repositories/products/
+│   ├── create_product.rb
+│   ├── update_product.rb
+│   ├── list_product.rb
+│   ├── destroy_product.rb
+│   └── fetch_product_by_id.rb
+├── builders/
+│   └── product.rb
+└── entities/
+    └── product.rb
+```
+
+**Code Files (Rails Engine):**
+```bash
+bin/rails generate rider_kick:scaffold products --engine MyEngine --domain core/
+```
+```
+engines/my_engine/app/domains/core/
+├── use_cases/products/
+│   ├── user_create_product.rb
+│   ├── user_update_product.rb
+│   ├── user_list_product.rb
+│   ├── user_destroy_product.rb
+│   └── user_fetch_product_by_id.rb
+├── repositories/products/
+│   ├── create_product.rb
+│   ├── update_product.rb
+│   ├── list_product.rb
+│   ├── destroy_product.rb
+│   └── fetch_product_by_id.rb
+├── builders/
+│   └── product.rb
+└── entities/
+    └── product.rb
+```
+
+**Spec Files (Domain Default):**
 ```
 app/domains/core/
+├── use_cases/products/
+│   ├── user_create_product_spec.rb
+│   ├── user_update_product_spec.rb
+│   ├── user_list_product_spec.rb
+│   ├── user_destroy_product_spec.rb
+│   └── user_fetch_product_by_id_spec.rb
+├── repositories/products/
+│   ├── create_product_spec.rb
+│   ├── update_product_spec.rb
+│   ├── list_product_spec.rb
+│   ├── destroy_product_spec.rb
+│   └── fetch_product_by_id_spec.rb
+├── builders/
+│   └── product_spec.rb
+└── entities/
+    └── product_spec.rb
+```
+
+**Spec Files (Domain Custom):**
+```
+app/domains/admin/
 ├── use_cases/products/
 │   ├── user_create_product_spec.rb
 │   ├── user_update_product_spec.rb

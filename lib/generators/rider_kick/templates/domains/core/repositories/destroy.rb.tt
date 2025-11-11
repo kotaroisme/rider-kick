@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
     @params = params
     @id     = @params.id

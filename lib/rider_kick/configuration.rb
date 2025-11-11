@@ -31,20 +31,21 @@ module RiderKick
   public_constant :ENTITY_TYPE_MAPPING
 
   class Configuration
-    attr_reader :domains_path, :models_path, :engine_name
+    attr_reader :domains_path, :models_path, :engine_name, :domain_scope
     attr_accessor :entities_path, :adapters_path
 
     def initialize
-      @domains_path  = 'app/domains'
-      @entities_path = File.join(@domains_path, 'core/entities')
+      @engine_name   = detect_engine_name
+      @domain_scope  = 'core/'
+      @domains_path  = detect_domains_path
+      @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
       @models_path   = detect_models_path
-      @engine_name   = detect_engine_name
     end
 
     def domains_path=(path)
       @domains_path = File.expand_path(path)
-      @entities_path = File.join(@domains_path, 'core/entities')
+      @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
     end
 
@@ -55,6 +56,16 @@ module RiderKick
     def engine_name=(name)
       @engine_name = name.nil? || name.to_s.strip.empty? ? nil : name.to_s
       @models_path = detect_models_path
+      @domains_path = detect_domains_path
+      @entities_path = File.join(@domains_path, 'entities')
+      @adapters_path = File.join(@domains_path, 'adapters')
+    end
+
+    def domain_scope=(scope)
+      @domain_scope = scope.nil? || scope.to_s.strip.empty? ? 'core/' : scope.to_s
+      @domains_path = detect_domains_path
+      @entities_path = File.join(@domains_path, 'entities')
+      @adapters_path = File.join(@domains_path, 'adapters')
     end
 
     private
@@ -96,6 +107,16 @@ module RiderKick
       else
         # Main app: app/models/models
         'app/models/models'
+      end
+    end
+
+    def detect_domains_path
+      if @engine_name
+        # Engine: engines/<engine_name>/app/domains/<domain_scope>
+        File.join('engines', @engine_name.underscore, 'app/domains', @domain_scope)
+      else
+        # Main app: app/domains/<domain_scope>
+        File.join('app/domains', @domain_scope)
       end
     end
   end

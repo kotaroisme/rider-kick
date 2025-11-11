@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-class Core::Entities::<%= @subject_class %> < Dry::Struct
+class <%= domain_class_name %>::Entities::<%= @subject_class %> < Dry::Struct
   transform_keys(&:to_sym)
 
   # Atribut Wajib (selalu ada)
   attribute :id, Types::Strict::String
-  <%- @entity_db_fields.each do |field| -%>
+  <%- @entity_db_fields.reject { |f| f == 'id' }.each do |field| -%>
   <%-
     # Dapatkan tipe data dari pemetaan
     db_type = get_column_type(field).to_s

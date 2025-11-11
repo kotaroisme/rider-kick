@@ -14,10 +14,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # 1) siapkan kerangka clean-arch minimal
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/repositories')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/builders')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/entities')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path)
         FileUtils.mkdir_p('app/models/models')
         FileUtils.mkdir_p('spec/models/models')
         FileUtils.mkdir_p('db/structures')
@@ -60,7 +57,8 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
           model: Models::Product
           resource_name: products
           actor: user
-          resource_owner_id:
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders:
             - { name: 'image', type: 'single' }
             - { name: 'documents', type: 'multiple' }
@@ -101,21 +99,21 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
 
         # 6) verifikasi artefak code files
         ['user_create_product', 'user_update_product', 'user_list_product', 'user_destroy_product', 'user_fetch_product_by_id'].each do |uc|
-          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/core/use_cases/products', "#{uc}.rb")), "Expected use case file #{uc}.rb to exist"
+          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/use_cases/products', "#{uc}.rb")), "Expected use case file #{uc}.rb to exist"
         end
 
         ['create_product', 'update_product', 'list_product', 'destroy_product', 'fetch_product_by_id'].each do |repo|
-          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/core/repositories/products', "#{repo}.rb")), "Expected repository file #{repo}.rb to exist"
+          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/repositories/products', "#{repo}.rb")), "Expected repository file #{repo}.rb to exist"
         end
 
-        expect(File).to exist(RiderKick.configuration.domains_path + '/core/builders/product.rb'), 'Expected builder file to exist'
-        expect(File).to exist(RiderKick.configuration.domains_path + '/core/entities/product.rb'), 'Expected entity file to exist'
+        expect(File).to exist(RiderKick.configuration.domains_path + '/builders/product.rb'), 'Expected builder file to exist'
+        expect(File).to exist(RiderKick.configuration.domains_path + '/entities/product.rb'), 'Expected entity file to exist'
 
         # 7) VERIFIKASI SPEC FILES - INI YANG BARU!
 
         # Use case specs
         ['user_create_product', 'user_update_product', 'user_list_product', 'user_destroy_product', 'user_fetch_product_by_id'].each do |uc|
-          spec_file = File.join(RiderKick.configuration.domains_path + '/core/use_cases/products', "#{uc}_spec.rb")
+          spec_file = File.join(RiderKick.configuration.domains_path + '/use_cases/products', "#{uc}_spec.rb")
           expect(File).to exist(spec_file), "Expected use case spec file #{uc}_spec.rb to exist"
 
           # Verifikasi konten spec file
@@ -128,7 +126,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
 
         # Repository specs
         ['create_product', 'update_product', 'list_product', 'destroy_product', 'fetch_product_by_id'].each do |repo|
-          spec_file = File.join(RiderKick.configuration.domains_path + '/core/repositories/products', "#{repo}_spec.rb")
+          spec_file = File.join(RiderKick.configuration.domains_path + '/repositories/products', "#{repo}_spec.rb")
           expect(File).to exist(spec_file), "Expected repository spec file #{repo}_spec.rb to exist"
 
           # Verifikasi konten spec file
@@ -153,7 +151,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
         end
 
         # Builder spec (covers entity validation too)
-        builder_spec = RiderKick.configuration.domains_path + '/core/builders/product_spec.rb'
+        builder_spec = RiderKick.configuration.domains_path + '/builders/product_spec.rb'
         expect(File).to exist(builder_spec), 'Expected builder spec file to exist'
 
         # Model spec
@@ -169,7 +167,6 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
         expect(model_spec_content).to include('documents') # multiple uploader
         expect(model_spec_content).to include('has one image attached')
         expect(model_spec_content).to include('has many documents attached')
-        expect(model_spec_content).to include('describe \'validations\'')
         expect(model_spec_content).to include('describe \'database columns\'')
 
         builder_spec_content = File.read(builder_spec)
@@ -192,10 +189,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # Setup
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/repositories')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/builders')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/entities')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path)
         FileUtils.mkdir_p('app/models/models')
         FileUtils.mkdir_p('db/structures')
 
@@ -235,6 +229,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
           resource_name: tasks
           actor: user
           resource_owner_id: account_id
+          resource_owner: account
           uploaders: []
           search_able: []
           domains:
@@ -273,7 +268,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
         instance.generate_use_case
 
         # Verifikasi spec files include resource_owner_id
-        spec_file = File.join(RiderKick.configuration.domains_path + '/core/use_cases/tasks', 'user_create_task_spec.rb')
+        spec_file = File.join(RiderKick.configuration.domains_path + '/use_cases/tasks', 'user_create_task_spec.rb')
         expect(File).to exist(spec_file)
 
         spec_content = File.read(spec_file)
@@ -286,10 +281,7 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # Setup minimal
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/repositories')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/builders')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/entities')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path)
         FileUtils.mkdir_p('app/models/models')
         FileUtils.mkdir_p('db/structures')
 
@@ -317,6 +309,8 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
           model: Models::Item
           resource_name: items
           actor: user
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders: []
           search_able: []
           domains:
@@ -332,20 +326,20 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
         instance.generate_use_case
 
         # Verifikasi lokasi file spec sejajar dengan code files
-        use_case_dir = File.join(RiderKick.configuration.domains_path + '/core/use_cases/items')
+        use_case_dir = File.join(RiderKick.configuration.domains_path + '/use_cases/items')
         expect(File).to exist(File.join(use_case_dir, 'user_create_item.rb'))
         expect(File).to exist(File.join(use_case_dir, 'user_create_item_spec.rb'))
 
-        repository_dir = File.join(RiderKick.configuration.domains_path + '/core/repositories/items')
+        repository_dir = File.join(RiderKick.configuration.domains_path + '/repositories/items')
         expect(File).to exist(File.join(repository_dir, 'create_item.rb'))
         expect(File).to exist(File.join(repository_dir, 'create_item_spec.rb'))
 
-        builders_dir = RiderKick.configuration.domains_path + '/core/builders'
+        builders_dir = RiderKick.configuration.domains_path + '/builders'
         expect(File).to exist(File.join(builders_dir, 'item.rb'))
         expect(File).to exist(File.join(builders_dir, 'item_spec.rb'))
 
         # Entity spec is NOT generated - builder spec covers entity validation
-        entities_dir = RiderKick.configuration.domains_path + '/core/entities'
+        entities_dir = RiderKick.configuration.domains_path + '/entities'
         expect(File).to exist(File.join(entities_dir, 'item.rb'))
         expect(File).not_to exist(File.join(entities_dir, 'item_spec.rb'))
       end

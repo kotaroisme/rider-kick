@@ -26,6 +26,7 @@ RSpec.describe 'repositories scaffolded content' do
           resource_name: users
           actor: owner
           resource_owner_id: owner_id
+          resource_owner: owner
           uploaders: []
           search_able: [name]
           domains:
@@ -39,17 +40,17 @@ RSpec.describe 'repositories scaffolded content' do
 
         klass.new(['users']).generate_use_case
 
-        list_repo = File.read(RiderKick.configuration.domains_path + '/core/repositories/users/list_user.rb')
+        list_repo = File.read(RiderKick.configuration.domains_path + '/repositories/users/list_user.rb')
         expect(list_repo).to match(/resource_owner_id|owner_id|account_id/i) # salah satu pola filter kepemilikan
         expect(list_repo).to match(/paginate|per_page|page/i)                # pagination hook
         expect(list_repo).to match(/name|search/i)                           # search_able minimal
 
-        fetch_repo = File.read(RiderKick.configuration.domains_path + '/core/repositories/users/fetch_user_by_id.rb')
+        fetch_repo = File.read(RiderKick.configuration.domains_path + '/repositories/users/fetch_user_by_id.rb')
         expect(fetch_repo).to match(/find_by|where\(.+id:/i)
 
-        create_repo = File.read(RiderKick.configuration.domains_path + '/core/repositories/users/create_user.rb')
-        update_repo = File.read(RiderKick.configuration.domains_path + '/core/repositories/users/update_user.rb')
-        destroy_repo = File.read(RiderKick.configuration.domains_path + '/core/repositories/users/destroy_user.rb')
+        create_repo = File.read(RiderKick.configuration.domains_path + '/repositories/users/create_user.rb')
+        update_repo = File.read(RiderKick.configuration.domains_path + '/repositories/users/update_user.rb')
+        destroy_repo = File.read(RiderKick.configuration.domains_path + '/repositories/users/destroy_user.rb')
 
         # repos utama terbentuk & memanggil ActiveRecord target
         [create_repo, update_repo, destroy_repo].each do |src|

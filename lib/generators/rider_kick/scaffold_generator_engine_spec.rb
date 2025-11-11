@@ -26,6 +26,8 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             model: Models::User
             resource_name: users
             actor: owner
+            resource_owner_id: account_id
+            resource_owner: account
             uploaders: []
             search_able: []
             domains:
@@ -56,11 +58,12 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
     it 'uses engine models path (app/models/<engine_name>)' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
+          # Set configuration for test first
+          RiderKick.configuration.engine_name = 'Core'
+          RiderKick.configuration.domain_scope = 'core/'
+
           FileUtils.mkdir_p([
-                              RiderKick.configuration.domains_path + '/core/use_cases',
-                              RiderKick.configuration.domains_path + '/core/repositories',
-                              RiderKick.configuration.domains_path + '/core/builders',
-                              RiderKick.configuration.domains_path + '/core/entities',
+                              RiderKick.configuration.domains_path,
                               'app/models/core',
                               'db/structures'
                             ])
@@ -96,6 +99,8 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             model: Models::Core::User
             resource_name: users
             actor: owner
+            resource_owner_id: account_id
+            resource_owner: account
             uploaders: []
             search_able: []
             domains:
@@ -107,11 +112,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             entity: { db_attributes: [id, created_at, updated_at] }
           YAML
 
-          # Reset configuration untuk test
-          RiderKick.configuration.engine_name = nil
-
           instance = klass.new(['users'])
-          allow(instance).to receive(:options).and_return({ engine: 'Core' })
           instance.generate_use_case
 
           # Verifikasi models_path menggunakan engine
@@ -124,11 +125,12 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
     it 'generates files with correct engine configuration' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
+          # Set configuration for test first
+          RiderKick.configuration.engine_name = 'Admin'
+          RiderKick.configuration.domain_scope = 'core/'
+
           FileUtils.mkdir_p([
-                              RiderKick.configuration.domains_path + '/core/use_cases',
-                              RiderKick.configuration.domains_path + '/core/repositories',
-                              RiderKick.configuration.domains_path + '/core/builders',
-                              RiderKick.configuration.domains_path + '/core/entities',
+                              RiderKick.configuration.domains_path,
                               'app/models/admin',
                               'db/structures'
                             ])
@@ -164,6 +166,8 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             model: Models::Admin::Product
             resource_name: products
             actor: admin
+            resource_owner_id: account_id
+            resource_owner: account
             uploaders: []
             search_able: []
             domains:
@@ -175,11 +179,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
             entity: { db_attributes: [id, created_at, updated_at] }
           YAML
 
-          # Reset configuration untuk test
-          RiderKick.configuration.engine_name = nil
-
           instance = klass.new(['products'])
-          allow(instance).to receive(:options).and_return({ engine: 'Admin' })
           instance.generate_use_case
 
           # Verifikasi engine name sudah di-set
@@ -187,8 +187,8 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
           expect(RiderKick.configuration.models_path).to eq('app/models/admin')
 
           # Verifikasi files ter-generate
-          expect(File).to exist(RiderKick.configuration.domains_path + '/core/builders/product.rb')
-          expect(File).to exist(RiderKick.configuration.domains_path + '/core/entities/product.rb')
+          expect(File).to exist(RiderKick.configuration.domains_path + '/builders/product.rb')
+          expect(File).to exist(RiderKick.configuration.domains_path + '/entities/product.rb')
         end
       end
     end

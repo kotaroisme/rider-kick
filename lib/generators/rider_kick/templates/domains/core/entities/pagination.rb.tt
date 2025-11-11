@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::Entities::Pagination < Dry::Struct
+class <%= domain_class_name %>::Entities::Pagination < Dry::Struct
   attribute :total_count, Types::Strict::Integer
   attribute :page, Types::Strict::Integer
   attribute :per_page, Types::Strict::Integer

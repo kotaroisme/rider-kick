@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
     @params = params
     @id     = @params.id
@@ -13,6 +13,6 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::
     resource = <%= @model_class %>.find_by(id: @id)
 <% end -%>
     return Failure '<%= @subject_class %> not found' unless resource.present?
-    Success Core::Builders::<%= @subject_class %>.new(resource).build
+    Success <%= domain_class_name %>::Builders::<%= @subject_class %>.new(resource).build
   end
 end

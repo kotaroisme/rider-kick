@@ -1,4 +1,4 @@
-class Core::UseCases::Contract::Pagination
+class <%= domain_class_name %>::UseCases::Contract::Pagination
   def call
     pagination
   end

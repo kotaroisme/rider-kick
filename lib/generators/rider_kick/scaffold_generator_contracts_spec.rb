@@ -31,6 +31,8 @@ RSpec.describe 'rider_kick:scaffold contracts' do
           model: Models::User
           resource_name: users
           actor: owner
+          resource_owner_id: account_id
+          resource_owner: account
           uploaders: []
           search_able: []
           domains:
@@ -47,7 +49,7 @@ RSpec.describe 'rider_kick:scaffold contracts' do
 
         # Cek isi kontrak
         readf = ->(path) { File.read(File.join(path)) }
-        base  = RiderKick.configuration.domains_path + '/core/use_cases/users'
+        base  = RiderKick.configuration.domains_path + '/use_cases/users'
 
         expect(readf["#{base}/owner_list_user.rb"])
           .to include('Core::UseCases::Contract::Default', 'Contract::Pagination')

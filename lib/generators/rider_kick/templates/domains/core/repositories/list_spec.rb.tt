@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Core::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
   describe '#call' do
     let(:params) do
       {

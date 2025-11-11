@@ -14,10 +14,7 @@ RSpec.describe 'rider_kick:scaffold generator (success)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # 1) siapkan kerangka clean-arch minimal
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/use_cases')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/repositories')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/builders')
-        FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/core/entities')
+        FileUtils.mkdir_p(RiderKick.configuration.domains_path)
         FileUtils.mkdir_p('app/models/models')
         FileUtils.mkdir_p('db/structures')
 
@@ -89,15 +86,15 @@ RSpec.describe 'rider_kick:scaffold generator (success)' do
         # 6) verifikasi artefak
         # use_cases (tanpa route scope): app/domains/core/use_cases/users/<use_case>.rb
         ['owner_create_user', 'owner_update_user', 'owner_list_user', 'owner_destroy_user', 'owner_fetch_user_by_id'].each do |uc|
-          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/core/use_cases/users', "#{uc}.rb"))
+          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/use_cases/users', "#{uc}.rb"))
         end
         # repositories: app/domains/core/repositories/users/<repo>.rb
         ['create_user', 'update_user', 'list_user', 'destroy_user', 'fetch_user_by_id'].each do |repo|
-          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/core/repositories/users', "#{repo}.rb"))
+          expect(File).to exist(File.join(RiderKick.configuration.domains_path + '/repositories/users', "#{repo}.rb"))
         end
         # builder & entity
-        expect(File).to exist(RiderKick.configuration.domains_path + '/core/builders/user.rb')
-        expect(File).to exist(RiderKick.configuration.domains_path + '/core/entities/user.rb')
+        expect(File).to exist(RiderKick.configuration.domains_path + '/builders/user.rb')
+        expect(File).to exist(RiderKick.configuration.domains_path + '/entities/user.rb')
       end
     end
   end
