@@ -13,6 +13,9 @@ RSpec.describe 'rider_kick:scaffold contracts (with scope)' do
   it 'menaruh use_cases di folder scope yang benar & menulis kontrak sesuai' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
+        # Set domain scope to core for this test
+        RiderKick.configuration.domain_scope = 'core/'
+
         FileUtils.mkdir_p([
                             RiderKick.configuration.domains_path + '/core/use_cases',
                             RiderKick.configuration.domains_path + '/core/repositories',

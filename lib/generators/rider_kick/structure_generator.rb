@@ -14,7 +14,7 @@ module RiderKick
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
     argument :arg_settings, type: :hash, default: {}, banner: 'route_scope:dashboard actor:user uploaders:assets,images,picture,document'
     class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
-    class_option :domain, type: :string, default: 'core/', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
+    class_option :domain, type: :string, default: '', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def generate_use_case
       configure_engine

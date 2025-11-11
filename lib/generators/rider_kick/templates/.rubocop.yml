@@ -1094,10 +1094,6 @@ Style/CommandLiteral:
 Style/ConstantVisibility:
   Enabled: true
 
-Style/ClassAndModuleChildren:
-  Enabled: true
-  EnforcedStyle: compact
-
 Style/Documentation:
   Enabled: false
 

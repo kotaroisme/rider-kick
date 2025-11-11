@@ -262,7 +262,7 @@ rails generate rider_kick:scaffold products scope:dashboard --domain admin/
 # Scaffold dalam engine
 rails generate rider_kick:scaffold products --engine OrderEngine --domain fulfillment/
 ```
-
+companies
 ### Structure Generation
 
 ```bash

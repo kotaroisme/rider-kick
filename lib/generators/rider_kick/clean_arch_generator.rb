@@ -6,7 +6,7 @@ module RiderKick
 
     class_option :setup, type: :boolean, default: false, desc: 'Setup domain structure'
     class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
-    class_option :domain, type: :string, default: 'core/', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
+    class_option :domain, type: :string, default: '', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def validate_setup_option
       # Jika --engine dispecify, maka --setup otomatis dianggap true
@@ -54,15 +54,49 @@ module RiderKick
 
     def domain_class_name
       # Convert domain scope to class name
-      # "core/" -> "Core", "admin/" -> "Admin", "api/v1/" -> "Api::V1"
+      # Engine: "<Engine>" for ApplicationRecord, "<Engine>::<Domain>" for other classes
+      # Main app: "" for ApplicationRecord, "<AppName>" for root domain, "<Domain>" for scoped domain
       scope = RiderKick.configuration.domain_scope.chomp('/')
-      scope.split('/').map(&:camelize).join('::')
+
+      if RiderKick.configuration.engine_name.present?
+        # Engine context: always prefix with engine name
+        engine_prefix = RiderKick.configuration.engine_name.camelize
+        if scope.empty?
+          engine_prefix
+        else
+          "#{engine_prefix}::#{scope.split('/').map(&:camelize).join('::')}"
+        end
+      elsif scope.empty?
+        # Main app context
+        # Root domain in main app: use application name
+        begin
+          Rails.application&.class&.module_parent_name || 'MyApp'
+        rescue
+          'MyApp' # Fallback for test environment
+        end
+      else
+        # Scoped domain in main app: use domain name only
+        scope.split('/').map(&:camelize).join('::')
+      end
+    end
+
+    def domain_class_name_for_application_record
+      # Special method for ApplicationRecord class names
+      # Engine: "<Engine>" (will become EngineApplicationRecord)
+      # Main app: "" (will become ApplicationRecord)
+      if RiderKick.configuration.engine_name.present?
+        # Engine context: use engine name
+        RiderKick.configuration.engine_name.camelize
+      else
+        # Main app context: empty string for ApplicationRecord
+        ''
+      end
     end
 
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
-        RiderKick.configuration.domain_scope = options[:domain] || 'core/'
+        RiderKick.configuration.domain_scope = options[:domain] || ''
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
         say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
       elsif options[:domain].present?
@@ -168,7 +202,7 @@ module RiderKick
     def setup_models
       if options[:engine].present?
         # Untuk engine, buat application_record.rb di engine directory
-        engine_models_path = "engines/#{options[:engine].downcase}/app/models"
+        engine_models_path = "engines/#{options[:engine].downcase}/app/models/#{options[:engine].downcase}"
         empty_directory engine_models_path unless Dir.exist?(engine_models_path)
         template 'models/application_record.rb', File.join(engine_models_path, 'application_record.rb')
       else

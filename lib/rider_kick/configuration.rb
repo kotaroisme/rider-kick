@@ -36,7 +36,7 @@ module RiderKick
 
     def initialize
       @engine_name   = detect_engine_name
-      @domain_scope  = 'core/'
+      @domain_scope  = ''
       @domains_path  = detect_domains_path
       @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
@@ -62,7 +62,7 @@ module RiderKick
     end
 
     def domain_scope=(scope)
-      @domain_scope = scope.nil? || scope.to_s.strip.empty? ? 'core/' : scope.to_s
+      @domain_scope = scope.nil? || scope.to_s.strip.empty? ? '' : scope.to_s
       @domains_path = detect_domains_path
       @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')

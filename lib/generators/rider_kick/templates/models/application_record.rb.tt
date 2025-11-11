@@ -1,4 +1,6 @@
-class ApplicationRecord < ActiveRecord::Base
+# frozen_string_literal: true
+
+class <%= domain_class_name_for_application_record %>::ApplicationRecord < ActiveRecord::Base
   primary_abstract_class
   self.abstract_class = true
 

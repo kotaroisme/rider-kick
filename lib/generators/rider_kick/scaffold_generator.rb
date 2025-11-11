@@ -15,7 +15,7 @@ module RiderKick
     argument :arg_structure, type: :string, default: '', banner: ''
     argument :arg_scope, type: :hash, default: {}, banner: 'scope:dashboard'
     class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
-    class_option :domain, type: :string, default: 'core/', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
+    class_option :domain, type: :string, default: '', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def generate_use_case
       configure_engine
@@ -39,15 +39,36 @@ module RiderKick
 
     def domain_class_name
       # Convert domain scope to class name
-      # "core/" -> "Core", "admin/" -> "Admin", "api/v1/" -> "Api::V1"
+      # Engine: "<Engine>::<Domain>::" or "<Engine>::" for root domain
+      # Main app: "<AppName>::" for root domain, "<Domain>::" for scoped domain
       scope = RiderKick.configuration.domain_scope.chomp('/')
-      scope.split('/').map(&:camelize).join('::')
+
+      if RiderKick.configuration.engine_name.present?
+        # Engine context: always prefix with engine name
+        engine_prefix = RiderKick.configuration.engine_name.camelize
+        if scope.empty?
+          engine_prefix
+        else
+          "#{engine_prefix}::#{scope.split('/').map(&:camelize).join('::')}"
+        end
+      elsif scope.empty?
+        # Main app context
+        # Root domain in main app: use application name
+        begin
+          Rails.application&.class&.module_parent_name || 'MyApp'
+        rescue
+          'MyApp' # Fallback for test environment
+        end
+      else
+        # Scoped domain in main app: use domain name only
+        scope.split('/').map(&:camelize).join('::')
+      end
     end
 
     def configure_engine
       if options[:engine].present?
         RiderKick.configuration.engine_name = options[:engine]
-        RiderKick.configuration.domain_scope = options[:domain] || 'core/'
+        RiderKick.configuration.domain_scope = options[:domain] || ''
         say "Using engine: #{RiderKick.configuration.engine_name}", :green
         say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
       elsif options[:domain].present?
