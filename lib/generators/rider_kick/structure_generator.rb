@@ -207,7 +207,16 @@ module RiderKick
     end
 
     def generate_files(action)
-      template 'db/structures/example.yaml.tt', File.join("db/structures/#{action}_structure.yaml")
+      structure_path = if RiderKick.configuration.engine_name.present?
+        # For engines, generate structure file in engine's db/structures directory
+        engine_name = RiderKick.configuration.engine_name.downcase
+        "engines/#{engine_name}/db/structures/#{action}_structure.yaml"
+      else
+        # For main app, generate in host's db/structures directory
+        "db/structures/#{action}_structure.yaml"
+      end
+
+      template 'db/structures/example.yaml.tt', structure_path
     end
 
     def contract_fields

@@ -166,6 +166,8 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
 
           FileUtils.mkdir_p(RiderKick.configuration.domains_path)
           FileUtils.mkdir_p(RiderKick.configuration.models_path)
+          engine_structures_path = "engines/#{RiderKick.configuration.engine_name.downcase}/db/structures"
+          FileUtils.mkdir_p(engine_structures_path)
 
           # Stub model classes
           Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
@@ -201,7 +203,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
           # Verifikasi models_path menggunakan engine
           expect(RiderKick.configuration.models_path).to eq('engines/core/app/models/core/models')
           expect(RiderKick.configuration.engine_name).to eq('Core')
-          expect(File).to exist('db/structures/users_structure.yaml')
+          expect(File).to exist('engines/core/db/structures/users_structure.yaml')
         end
       end
     end
@@ -215,6 +217,8 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
 
           FileUtils.mkdir_p(RiderKick.configuration.domains_path)
           FileUtils.mkdir_p(RiderKick.configuration.models_path)
+          engine_structures_path = "engines/#{RiderKick.configuration.engine_name.downcase}/db/structures"
+          FileUtils.mkdir_p(engine_structures_path)
 
           # Stub model classes
           Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
@@ -252,8 +256,8 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
           expect(RiderKick.configuration.models_path).to eq('engines/admin/app/models/admin/models')
 
           # Verifikasi file structure ter-generate
-          expect(File).to exist('db/structures/products_structure.yaml')
-          yaml = File.read('db/structures/products_structure.yaml')
+          expect(File).to exist('engines/admin/db/structures/products_structure.yaml')
+          yaml = File.read('engines/admin/db/structures/products_structure.yaml')
           expect(yaml).to include('model: Models::Admin::Product')
         end
       end

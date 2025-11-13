@@ -12,8 +12,11 @@ RSpec.describe 'rider_kick:structure generator (success)' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # 1) siapkan struktur minimal Clean Arch
+        RiderKick.configuration.engine_name = 'OrderEngine'
+        RiderKick.configuration.domain_scope = 'order_engine/fulfillment/'
         FileUtils.mkdir_p(RiderKick.configuration.domains_path + '/use_cases')
         FileUtils.mkdir_p('app/models/models')
+        FileUtils.mkdir_p('engines/orderengine/db/structures')
 
         # 2) stub namespace & model + metadata kolom
         Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
@@ -46,8 +49,8 @@ RSpec.describe 'rider_kick:structure generator (success)' do
         instance.generate_use_case
 
         # 4) verifikasi file output
-        expect(File).to exist('db/structures/users_structure.yaml')
-        yaml = File.read('db/structures/users_structure.yaml')
+        expect(File).to exist('engines/orderengine/db/structures/users_structure.yaml')
+        yaml = File.read('engines/orderengine/db/structures/users_structure.yaml')
         expect(yaml).to include('model: Models::User')
         expect(yaml).to include('resource_name: users')
         expect(yaml).to include('actor: owner')

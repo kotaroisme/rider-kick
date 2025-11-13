@@ -193,13 +193,16 @@ module RiderKick
 
     def setup_init_migration
       if options[:engine].present?
-        # Untuk engine, buat migration di engine directory
+        # Untuk engine, buat migration dan structures directory di engine directory
         engine_migrate_path = "engines/#{options[:engine].downcase}/db/migrate"
+        engine_structures_path = "engines/#{options[:engine].downcase}/db/structures"
         empty_directory engine_migrate_path unless Dir.exist?(engine_migrate_path)
+        empty_directory engine_structures_path unless Dir.exist?(engine_structures_path)
         template 'db/migrate/20220613145533_init_database.rb', File.join(engine_migrate_path, '20220613145533_init_database.rb')
       else
-        # Untuk main app, buat di root db/migrate
+        # Untuk main app, buat di root db/migrate dan db/structures
         template 'db/migrate/20220613145533_init_database.rb', File.join('db/migrate/20220613145533_init_database.rb')
+        empty_directory 'db/structures' unless Dir.exist?('db/structures')
       end
     end
 

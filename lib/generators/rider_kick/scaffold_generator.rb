@@ -151,7 +151,17 @@ module RiderKick
     end
 
     def setup_variables
-      config     = YAML.load_file("db/structures/#{arg_structure}_structure.yaml")
+      # Determine structure file path based on engine configuration
+      structure_path = if RiderKick.configuration.engine_name.present?
+        # For engines, read structure file from engine's db/structures directory
+        engine_name = RiderKick.configuration.engine_name.downcase
+        "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
+      else
+        # For main app, read from host's db/structures directory
+        "db/structures/#{arg_structure}_structure.yaml"
+      end
+
+      config     = YAML.load_file(structure_path)
       @structure = Hashie::Mash.new(config)
 
       # Mengambil detail konfigurasi

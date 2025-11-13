@@ -66,7 +66,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
                               RiderKick.configuration.domains_path,
                               RiderKick.configuration.models_path,
                               'engines/core/app/models/core',
-                              'db/structures'
+                              'engines/core/db/structures'
                             ])
 
           # Stub model classes
@@ -96,7 +96,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
           end
 
           File.write('engines/core/app/models/core/models/user.rb', "class Models::Core::User < ApplicationRecord; end\n")
-          File.write('db/structures/users_structure.yaml', <<~YAML)
+          File.write('engines/core/db/structures/users_structure.yaml', <<~YAML)
             model: Models::Core::User
             resource_name: users
             actor: owner
@@ -133,7 +133,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
           FileUtils.mkdir_p([
                               RiderKick.configuration.domains_path,
                               'app/models/admin',
-                              'db/structures'
+                              'engines/admin/db/structures'
                             ])
 
           # Stub model classes
@@ -163,7 +163,7 @@ RSpec.describe 'rider_kick:scaffold generator with engine option' do
           end
 
           File.write('app/models/admin/product.rb', "class Models::Admin::Product < ApplicationRecord; end\n")
-          File.write('db/structures/products_structure.yaml', <<~YAML)
+          File.write('engines/admin/db/structures/products_structure.yaml', <<~YAML)
             model: Models::Admin::Product
             resource_name: products
             actor: admin
