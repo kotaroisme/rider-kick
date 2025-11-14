@@ -65,15 +65,15 @@ module RiderKick
         YAML.load_file(file_path)
       rescue Psych::SyntaxError => e
         raise YamlFormatError.new(
-          "Invalid YAML format in #{file_path}: #{e.message}",
-          file_path: file_path,
-          yaml_error: e.message
+                "Invalid YAML format in #{file_path}: #{e.message}",
+                file_path:  file_path,
+                yaml_error: e.message
         )
       rescue => e
         raise YamlFormatError.new(
-          "Error reading YAML file #{file_path}: #{e.message}",
-          file_path: file_path,
-          error: e.message
+                "Error reading YAML file #{file_path}: #{e.message}",
+                file_path: file_path,
+                error:     e.message
         )
       end
     end
@@ -81,33 +81,32 @@ module RiderKick
     def validate_model_exists!(model_name)
       # Try to constantize the model name
       # This will raise NameError if the model doesn't exist
-      begin
-        model_name.constantize
-      rescue NameError => e
-        # Try to load the model file if it exists (for test scenarios where file exists but not loaded)
-        model_path = find_model_file(model_name)
-        if model_path && File.exist?(model_path)
-          # Try loading the file
-          begin
-            load model_path
-            model_name.constantize
-          rescue => load_error
-            # If loading also fails, raise the original error
-            raise ModelNotFoundError.new(
-              "Model #{model_name} not found. Make sure the model exists and is valid.",
-              model_name: model_name,
-              original_error: e.message,
-              load_error: load_error.message
-            )
-          end
-        else
-          # Model file doesn't exist, raise error
+
+      model_name.constantize
+    rescue NameError => e
+      # Try to load the model file if it exists (for test scenarios where file exists but not loaded)
+      model_path = find_model_file(model_name)
+      if model_path && File.exist?(model_path)
+        # Try loading the file
+        begin
+          load model_path
+          model_name.constantize
+        rescue => load_error
+          # If loading also fails, raise the original error
           raise ModelNotFoundError.new(
-            "Model #{model_name} not found. Make sure the model exists.",
-            model_name: model_name,
-            original_error: e.message
+                  "Model #{model_name} not found. Make sure the model exists and is valid.",
+                  model_name:     model_name,
+                  original_error: e.message,
+                  load_error:     load_error.message
           )
         end
+      else
+        # Model file doesn't exist, raise error
+        raise ModelNotFoundError.new(
+                "Model #{model_name} not found. Make sure the model exists.",
+                model_name:     model_name,
+                original_error: e.message
+        )
       end
     end
 
@@ -118,7 +117,7 @@ module RiderKick
       return nil if parts.empty?
 
       file_name = parts.last.underscore + '.rb'
-      
+
       # Check main app models path first
       main_path = File.join(RiderKick.configuration.models_path, file_name)
       return main_path if File.exist?(main_path)
@@ -126,12 +125,12 @@ module RiderKick
       # Check engine models path if engine is set
       if RiderKick.configuration.engine_name
         engine_path = File.join(
-          'engines',
-          RiderKick.configuration.engine_name.underscore,
-          'app/models',
-          RiderKick.configuration.engine_name.underscore,
-          'models',
-          file_name
+                        'engines',
+                        RiderKick.configuration.engine_name.underscore,
+                        'app/models',
+                        RiderKick.configuration.engine_name.underscore,
+                        'models',
+                        file_name
         )
         return engine_path if File.exist?(engine_path)
       end
@@ -142,8 +141,8 @@ module RiderKick
     def validate_domains_path!
       unless Dir.exist?(RiderKick.configuration.domains_path)
         raise ValidationError.new(
-          'Clean architecture structure not found. Run: bin/rails generate rider_kick:clean_arch --setup',
-          domains_path: RiderKick.configuration.domains_path
+                'Clean architecture structure not found. Run: bin/rails generate rider_kick:clean_arch --setup',
+                domains_path: RiderKick.configuration.domains_path
         )
       end
     end
@@ -189,4 +188,3 @@ module RiderKick
     end
   end
 end
-

@@ -12,7 +12,7 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
   def setup_test_model(class_name: 'Article', columns: [])
     Object.send(:remove_const, :Models) if Object.const_defined?(:Models)
     Object.send(:remove_const, :TestColumn) if Object.const_defined?(:TestColumn)
-    
+
     # Create Models module using Module.new to avoid syntax error
     models_module = Module.new
     Object.const_set(:Models, models_module)
@@ -42,10 +42,10 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
 
     Models.const_set(class_name, model_class)
     created_class = Models.const_get(class_name)
-    
+
     # Verify that constantize works (this is what validate_model_exists! will do)
     model_class_name.constantize
-    
+
     created_class
   end
 
@@ -54,21 +54,21 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('title', :string),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('title', :string),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -117,20 +117,20 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -174,19 +174,19 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -232,21 +232,21 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('title', :string),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('title', :string),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -308,21 +308,21 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('title', :string),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('title', :string),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -383,21 +383,21 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('title', :string),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('title', :string),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -460,19 +460,19 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -516,19 +516,19 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -571,20 +571,20 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -636,20 +636,20 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -701,20 +701,20 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -761,21 +761,21 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
           FileUtils.mkdir_p([
-            RiderKick.configuration.domains_path + '/core/use_cases',
-            RiderKick.configuration.domains_path + '/core/repositories',
-            RiderKick.configuration.domains_path + '/core/builders',
-            RiderKick.configuration.domains_path + '/core/entities',
-            'app/models/models',
-            'db/structures'
-          ])
+                              RiderKick.configuration.domains_path + '/core/use_cases',
+                              RiderKick.configuration.domains_path + '/core/repositories',
+                              RiderKick.configuration.domains_path + '/core/builders',
+                              RiderKick.configuration.domains_path + '/core/entities',
+                              'app/models/models',
+                              'db/structures'
+                            ])
 
           setup_test_model(class_name: 'Article', columns: [
-            TestColumn.new('id', :uuid),
-            TestColumn.new('account_id', :uuid),
-            TestColumn.new('title', :string),
-            TestColumn.new('created_at', :datetime),
-            TestColumn.new('updated_at', :datetime)
-          ])
+                             TestColumn.new('id', :uuid),
+                             TestColumn.new('account_id', :uuid),
+                             TestColumn.new('title', :string),
+                             TestColumn.new('created_at', :datetime),
+                             TestColumn.new('updated_at', :datetime)
+                           ])
 
           File.write('app/models/models/article.rb', "class Models::Article < ApplicationRecord; end\n")
           File.write('db/structures/articles_structure.yaml', <<~YAML)
@@ -818,4 +818,3 @@ RSpec.describe 'rider_kick:scaffold conditional filtering' do
     end
   end
 end
-

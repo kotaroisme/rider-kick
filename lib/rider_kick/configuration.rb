@@ -15,6 +15,7 @@ module RiderKick
     'upload'   => 'Types::File',
     'datetime' => ':time'
   }.freeze
+  public_constant :DEFAULT_TYPE_MAPPING
 
   DEFAULT_ENTITY_TYPE_MAPPING = {
     'uuid'     => 'Types::Strict::String',
@@ -27,7 +28,7 @@ module RiderKick
     'date'     => 'Types::Strict::Date',
     'datetime' => 'Types::Strict::Time'
   }.freeze
-
+  public_constant :DEFAULT_ENTITY_TYPE_MAPPING
   # Backward compatibility constants
   TYPE_MAPPING = DEFAULT_TYPE_MAPPING
   ENTITY_TYPE_MAPPING = DEFAULT_ENTITY_TYPE_MAPPING
@@ -71,13 +72,9 @@ module RiderKick
       @entity_type_mapping = DEFAULT_ENTITY_TYPE_MAPPING.dup
     end
 
-    def type_mapping
-      @type_mapping
-    end
+    attr_reader :type_mapping
 
-    def entity_type_mapping
-      @entity_type_mapping
-    end
+    attr_reader :entity_type_mapping
 
     def register_type_mapping(db_type, dry_type)
       @type_mapping[db_type.to_s] = dry_type.to_s
@@ -142,9 +139,9 @@ module RiderKick
       # Basic path validation - should not contain invalid characters
       if path_str.match?(/[<>:"|?*\x00-\x1f]/)
         raise RiderKick::ConfigurationError.new(
-          "Invalid #{attribute_name} format: contains invalid characters",
-          attribute: attribute_name,
-          value: path_str
+                "Invalid #{attribute_name} format: contains invalid characters",
+                attribute: attribute_name,
+                value:     path_str
         )
       end
     end
@@ -157,10 +154,10 @@ module RiderKick
       # Both formats are acceptable and will be converted as needed
       unless name_str.match?(/^[A-Z][a-zA-Z0-9]*$/) || name_str.match?(/^[a-z][a-z0-9_]*$/)
         raise RiderKick::ConfigurationError.new(
-          "Invalid engine_name format: must be CamelCase (e.g., 'Core', 'Admin') or underscore_case (e.g., 'order_engine')",
-          attribute: 'engine_name',
-          value: name_str,
-          suggestion: "Use CamelCase format like 'Core' or 'Admin', or underscore_case like 'order_engine'"
+                "Invalid engine_name format: must be CamelCase (e.g., 'Core', 'Admin') or underscore_case (e.g., 'order_engine')",
+                attribute:  'engine_name',
+                value:      name_str,
+                suggestion: "Use CamelCase format like 'Core' or 'Admin', or underscore_case like 'order_engine'"
         )
       end
     end
@@ -172,10 +169,10 @@ module RiderKick
       # Domain scope should contain only alphanumeric, slash, underscore, hyphen
       unless scope_str.match?(/^[a-zA-Z0-9\/_-]+$/)
         raise RiderKick::ConfigurationError.new(
-          "Invalid domain_scope format: must contain only alphanumeric characters, slashes, underscores, and hyphens",
-          attribute: 'domain_scope',
-          value: scope_str,
-          suggestion: "Use format like 'core/', 'admin/', 'api/v1/'"
+                'Invalid domain_scope format: must contain only alphanumeric characters, slashes, underscores, and hyphens',
+                attribute:  'domain_scope',
+                value:      scope_str,
+                suggestion: "Use format like 'core/', 'admin/', 'api/v1/'"
         )
       end
     end

@@ -15,8 +15,8 @@ module RiderKick
 
       unless options.setup
         raise ValidationError.new(
-          'The --setup option must be specified to create the domain structure.',
-          suggestion: 'Run: bin/rails generate rider_kick:clean_arch --setup'
+                'The --setup option must be specified to create the domain structure.',
+                suggestion: 'Run: bin/rails generate rider_kick:clean_arch --setup'
         )
       end
     end
@@ -42,6 +42,7 @@ module RiderKick
         # Untuk engine, hanya setup yang relevan
         setup_init_migration
         setup_models
+        setup_engine_generators
       else
         # Untuk main app, setup semua
         setup_initializers
@@ -109,7 +110,6 @@ module RiderKick
         ''
       end
     end
-
 
     def setup_active_storage
       run 'rails active_storage:install'
@@ -273,7 +273,7 @@ module RiderKick
 
     def setup_application_config
       application_config_path = 'config/application.rb'
-      
+
       # Check if file exists
       unless File.exist?(application_config_path)
         say "File #{application_config_path} not found, skipping application config setup", :yellow
@@ -289,18 +289,57 @@ module RiderKick
 
       # Find the class Application block and inject config after class definition
       # Look for pattern: class Application < Rails::Application
-      if application_content.match(/class\s+Application\s+<\s+Rails::Application/)
+      if /class\s+Application\s+<\s+Rails::Application/.match?(application_content)
         # Try to inject right after class definition line
         inject_into_file application_config_path, after: /class\s+Application\s+<\s+Rails::Application\s*\n/ do
           <<~RUBY
-    # Load migrations from engines
-    config.paths['db/migrate'] << './**/db/migrate'
+            # Load migrations from engines
+            config.paths['db/migrate'] << './**/db/migrate'
 
-RUBY
+          RUBY
         end
         say "Added migration paths config to #{application_config_path}", :green
       else
         say "Could not find Application class in #{application_config_path}, skipping", :yellow
+      end
+    end
+
+    def setup_engine_generators
+      engine_name_underscore = options[:engine].downcase
+      options[:engine].camelize
+      engine_rb_path = "engines/#{engine_name_underscore}/lib/#{engine_name_underscore}/engine.rb"
+
+      # Check if file exists
+      unless File.exist?(engine_rb_path)
+        say "File #{engine_rb_path} not found, skipping engine generators config setup", :yellow
+        return
+      end
+
+      # Check if config already exists
+      engine_content = File.read(engine_rb_path)
+      if engine_content.include?('config.generators do |generate|')
+        say "Generator config already exists in #{engine_rb_path}", :green
+        return
+      end
+
+      # Find the engine class definition and inject config inside it
+      # Look for pattern: class Engine < Rails::Engine (inside module)
+      if /class\s+Engine\s+<\s+::Rails::Engine/.match?(engine_content)
+        # Try to inject right after the class definition line
+        inject_into_file engine_rb_path, after: /class\s+Engine\s+<\s+::Rails::Engine\s*\n/ do
+          <<~RUBY
+            config.generators do |generate|
+              generate.orm :active_record, primary_key_type: :uuid
+              generate.assets = false
+              generate.helper = false
+              generate.test_framework nil
+            end
+
+          RUBY
+        end
+        say "Added generator config to #{engine_rb_path}", :green
+      else
+        say "Could not find Engine class in #{engine_rb_path}, skipping", :yellow
       end
     end
   end

@@ -40,4 +40,3 @@ module RiderKick
   class YamlFormatError < GeneratorError
   end
 end
-

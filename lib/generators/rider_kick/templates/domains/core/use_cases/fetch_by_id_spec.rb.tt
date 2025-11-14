@@ -10,7 +10,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
     
     let(:valid_params) do
       {
-        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? %>,
+        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract %>,
         <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
       }
     end

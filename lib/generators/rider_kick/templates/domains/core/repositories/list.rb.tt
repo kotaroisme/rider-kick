@@ -12,7 +12,7 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
 <% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
     resources = <%= @model_class %>.where(<%= @resource_owner_id %>: @params.<%= @resource_owner_id %>)
 <% else -%>
-    resources = <%= @model_class %>
+    resources = <%= @model_class %>.all
 <% end -%>
 <% if @search_able.present? && @search_able.any? -%>
     if @search.present?

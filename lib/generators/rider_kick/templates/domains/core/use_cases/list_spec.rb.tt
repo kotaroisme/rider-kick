@@ -6,10 +6,10 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
   describe '#call' do
     let(:repository) { instance_double(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
     let(:pagination_entity) { instance_double(<%= domain_class_name %>::Entities::Pagination) }
-    
+
     let(:valid_params) do
       {
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
 <% end -%>
         page: 1,
@@ -38,7 +38,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
 
     context 'when parameters are invalid' do
       it 'returns failure with validation errors' do
-        invalid_params = { page: -1 }
+        invalid_params = { page: 'not-a-number' }
 
         contract = described_class.contract!(invalid_params)
         result = described_class.new(contract).result

@@ -6,9 +6,6 @@ class <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class,
 <% @contract_list.each do |field| -%>
       <%= field %>
 <% end -%>
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
-      required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
     end
   end
   # Set specific return monads at method 'result'

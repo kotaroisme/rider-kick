@@ -76,7 +76,6 @@ module RiderKick
       end
     end
 
-
     def validation!
       validate_domains_path!
     end
@@ -94,11 +93,11 @@ module RiderKick
 
         unless @model_class.column_names.include?(field_name)
           raise ValidationError.new(
-            "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
-            structure_file: "#{arg_structure}_structure.yaml",
-            field_name: field_name,
-            model_class: @model_class.to_s,
-            available_columns: @model_class.column_names
+                  "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
+                  structure_file:    "#{arg_structure}_structure.yaml",
+                  field_name:        field_name,
+                  model_class:       @model_class.to_s,
+                  available_columns: @model_class.column_names
           )
         end
       end
@@ -111,12 +110,12 @@ module RiderKick
 
       if missing_fields.any?
         raise ValidationError.new(
-          "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
-          structure_file: "#{arg_structure}_structure.yaml",
-          missing_fields: missing_fields,
-          model_class: @model_class.to_s,
-          available_columns: @model_class.column_names,
-          suggestion: "Update section 'entity.db_attributes' di YAML file"
+                "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
+                structure_file:    "#{arg_structure}_structure.yaml",
+                missing_fields:    missing_fields,
+                model_class:       @model_class.to_s,
+                available_columns: @model_class.column_names,
+                suggestion:        "Update section 'entity.db_attributes' di YAML file"
         )
       end
     end
@@ -167,11 +166,12 @@ module RiderKick
       @services = @structure.domains || {}
 
       # Membaca kontrak dinamis (dari Peningkatan #1)
-      @contract_list        = @services.action_list&.use_case&.contract || []
-      @contract_fetch_by_id = @services.action_fetch_by_id&.use_case&.contract || []
-      @contract_create      = @services.action_create&.use_case&.contract || []
-      @contract_update      = @services.action_update&.use_case&.contract || []
-      @contract_destroy     = @services.action_destroy&.use_case&.contract || []
+      # Pastikan selalu return array, bahkan jika nil
+      @contract_list        = Array(@services.action_list&.use_case&.contract).compact
+      @contract_fetch_by_id = Array(@services.action_fetch_by_id&.use_case&.contract).compact
+      @contract_create      = Array(@services.action_create&.use_case&.contract).compact
+      @contract_update      = Array(@services.action_update&.use_case&.contract).compact
+      @contract_destroy     = Array(@services.action_destroy&.use_case&.contract).compact
     end
 
     def setup_entity_variables
@@ -193,7 +193,7 @@ module RiderKick
       @actor                = @structure.actor
       @resource_owner_id    = @structure.resource_owner_id
       @resource_owner       = @structure.resource_owner
-      @search_able         = @structure.search_able
+      @search_able = @structure.search_able
 
       # Membaca DSL filter repositori baru (Peningkatan #2)
       @repository_list_filters = @services.action_list&.repository&.filters || []
@@ -207,8 +207,6 @@ module RiderKick
         @structure.actor_id.to_s
       elsif @actor.present?
         "#{@actor.to_s.downcase}_id"
-      else
-        nil
       end
 
       # Set flag untuk setiap action apakah resource_owner_id atau actor_id ada di contract
@@ -244,13 +242,21 @@ module RiderKick
         @contract_destroy
       else
         []
-      end || []
-
+      end
+      contract ||= []
       # Check apakah contract string mengandung field name
       # Pattern: "required(:field_name)" atau "optional(:field_name)"
       # Contoh: "required(:account_id).filled(:string)" -> match untuk "account_id"
+      # Pattern lebih robust: cari :field_name atau (:field_name) di dalam string
+      return false if contract.empty?
+
       contract.any? do |contract_line|
-        contract_line.to_s.match?(/[:\(]#{Regexp.escape(field_name.to_s)}[\):]/)
+        contract_str = contract_line.to_s.strip
+        # Match pattern: required(:field_name) atau optional(:field_name) atau :field_name
+        # Pattern: cari :field_name atau (:field_name) di dalam string
+        # Escaped field_name untuk handle special characters
+        escaped_field = Regexp.escape(field_name.to_s)
+        contract_str.match?(/[:\(]#{escaped_field}[\):]/)
       end
     end
 

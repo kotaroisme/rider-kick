@@ -27,15 +27,15 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
         (parts.length - 1).downto(0) do |i|
           module_path = parts[0..i].join('::')
           if Object.const_defined?(module_path)
-            parent = i > 0 ? Object.const_get(parts[0..i-1].join('::')) : Object
+            parent = i > 0 ? Object.const_get(parts[0..i - 1].join('::')) : Object
             parent.send(:remove_const, parts[i].to_sym)
           end
         end
       rescue NameError
         # Module doesn't exist, continue
       end
-    else
-      Object.send(:remove_const, module_name.to_sym) if Object.const_defined?(module_name.to_sym)
+    elsif Object.const_defined?(module_name.to_sym)
+      Object.send(:remove_const, module_name.to_sym)
     end
 
     # Create nested modules if needed
@@ -449,7 +449,7 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           # Test get_column_type directly - should return 'upload' for uploader field
           column_type = instance.send(:get_column_type, 'image')
           expect(column_type).to eq('upload')
-          
+
           # Test that uploaders are excluded from contract_fields (by design)
           fields = instance.instance_variable_get(:@fields)
           expect(fields).not_to include('image')
@@ -480,7 +480,7 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           # Test get_column_type directly - should return 'upload' for uploader field
           column_type = instance.send(:get_column_type, 'image')
           expect(column_type).to eq('upload')
-          
+
           # Uploaders are excluded from contract_fields by design
           fields = instance.instance_variable_get(:@fields)
           expect(fields).not_to include('image')
@@ -537,22 +537,22 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           instance.send(:setup_variables)
 
           contract_lines = instance.instance_variable_get(:@contract_lines_for_create)
-          
+
           uuid_line = contract_lines.find { |l| l.include?('uuid_field') }
           expect(uuid_line).to include(':string')
-          
+
           int_line = contract_lines.find { |l| l.include?('int_field') }
           expect(int_line).to include(':integer')
-          
+
           bool_line = contract_lines.find { |l| l.include?('bool_field') }
           expect(bool_line).to include(':bool')
-          
+
           decimal_line = contract_lines.find { |l| l.include?('decimal_field') }
           expect(decimal_line).to include(':decimal')
-          
+
           date_line = contract_lines.find { |l| l.include?('date_field') }
           expect(date_line).to include(':date')
-          
+
           datetime_line = contract_lines.find { |l| l.include?('datetime_field') }
           expect(datetime_line).to include(':time')
         end
@@ -665,7 +665,7 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           # Test get_column_type directly - should return 'upload' for uploader field
           column_type = instance.send(:get_column_type, 'image')
           expect(column_type).to eq('upload')
-          
+
           # Uploaders are excluded from contract_fields by design, so they won't appear in update contract lines
           # But the logic for handling upload types is tested via get_column_type
         end
@@ -906,16 +906,16 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
 
           uploader_defs = instance.instance_variable_get(:@entity_uploader_definitions)
           expect(uploader_defs.length).to eq(4)
-          
+
           image_def = uploader_defs.find { |u| u[:name] == 'image' }
           expect(image_def[:type]).to eq('single')
-          
+
           images_def = uploader_defs.find { |u| u[:name] == 'images' }
           expect(images_def[:type]).to eq('multiple')
-          
+
           asset_def = uploader_defs.find { |u| u[:name] == 'asset' }
           expect(asset_def[:type]).to eq('single')
-          
+
           assets_def = uploader_defs.find { |u| u[:name] == 'assets' }
           expect(assets_def[:type]).to eq('multiple')
         end
@@ -1358,14 +1358,14 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
 
           columns_meta = instance.instance_variable_get(:@columns)
           title_meta = columns_meta.find { |c| c[:name] == 'title' }
-          
+
           expect(title_meta).to include(
-            name: 'title',
-            type: :string,
-            sql_type: 'character varying',
-            null: true,
-            default: 'default',
-            limit: 255
+                                  name:     'title',
+                                  type:     :string,
+                                  sql_type: 'character varying',
+                                  null:     true,
+                                  default:  'default',
+                                  limit:    255
           )
         end
       end
@@ -1403,7 +1403,9 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           FileUtils.mkdir_p('app/models/models')
 
           column_without_sql_type = Class.new(Struct.new(:name, :type, :null)) do
-            def sql_type; nil; end
+            def sql_type
+              nil
+            end
           end
 
           columns = [
@@ -1447,7 +1449,7 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           columns_meta = instance.instance_variable_get(:@columns)
           title_meta = columns_meta.find { |c| c[:name] == 'title' }
           required_meta = columns_meta.find { |c| c[:name] == 'required_field' }
-          
+
           expect(title_meta[:null]).to be true
           expect(required_meta[:null]).to be false
         end
@@ -1538,7 +1540,9 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
 
           # Create a column that doesn't respond to all methods
           minimal_column = Struct.new(:name, :type) do
-            def to_s; name.to_s; end
+            def to_s
+              name.to_s
+            end
           end
 
           columns = [
@@ -1840,11 +1844,11 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
 
           instance = klass.new(['Models::Article', 'actor:user', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
-          
+
           # First call should show message
           expect(instance).to receive(:say).at_least(:once)
           instance.send(:configure_engine)
-          
+
           # Set flag and call again - should not show message again
           instance.instance_variable_set(:@engine_configured, true)
           expect(instance).not_to receive(:say)
@@ -2116,8 +2120,8 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           instance.send(:setup_variables)
 
           expect(instance).to receive(:template).with(
-            'db/structures/example.yaml.tt',
-            'engines/core/db/structures/articles_structure.yaml'
+                                'db/structures/example.yaml.tt',
+                                'engines/core/db/structures/articles_structure.yaml'
           )
           instance.send(:generate_files, 'articles')
         end
@@ -2139,8 +2143,8 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           instance.send(:setup_variables)
 
           expect(instance).to receive(:template).with(
-            'db/structures/example.yaml.tt',
-            'db/structures/articles_structure.yaml'
+                                'db/structures/example.yaml.tt',
+                                'db/structures/articles_structure.yaml'
           )
           instance.send(:generate_files, 'articles')
         end
@@ -2159,9 +2163,9 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
           instance = klass.new(['Models::NonExistent', 'actor:user', 'resource_owner:account', 'resource_owner_id:account_id'])
           allow(instance).to receive(:options).and_return({ engine: nil })
 
-      expect {
-        instance.send(:setup_variables)
-      }.to raise_error(RiderKick::ModelNotFoundError)
+          expect {
+            instance.send(:setup_variables)
+          }.to raise_error(RiderKick::ModelNotFoundError)
         end
       end
     end
@@ -2196,4 +2200,3 @@ RSpec.describe 'rider_kick:structure generator (unit tests)' do
     end
   end
 end
-

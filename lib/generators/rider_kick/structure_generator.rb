@@ -36,31 +36,31 @@ module RiderKick
 
       if actor.blank?
         raise ValidationError.new(
-          "Missing required setting: actor. Contoh: 'actor:user'",
-          setting: 'actor',
-          provided_settings: arg_settings.keys
+                "Missing required setting: actor. Contoh: 'actor:user'",
+                setting:           'actor',
+                provided_settings: arg_settings.keys
         )
       end
 
       if resource_owner.blank?
         raise ValidationError.new(
-          "Missing required setting: resource_owner. Contoh: 'resource_owner:account'",
-          setting: 'resource_owner',
-          provided_settings: arg_settings.keys
+                "Missing required setting: resource_owner. Contoh: 'resource_owner:account'",
+                setting:           'resource_owner',
+                provided_settings: arg_settings.keys
         )
       end
 
       if resource_owner_id.blank?
         raise ValidationError.new(
-          "Missing required setting: resource_owner_id. Contoh: 'resource_owner_id:account_id'",
-          setting: 'resource_owner_id',
-          provided_settings: arg_settings.keys
+                "Missing required setting: resource_owner_id. Contoh: 'resource_owner_id:account_id'",
+                setting:           'resource_owner_id',
+                provided_settings: arg_settings.keys
         )
       end
     end
 
     def setup_variables
-      @variable_subject   = arg_model_name.split('::').last.underscore.downcase
+      @variable_subject = arg_model_name.split('::').last.underscore.downcase
       validate_model_exists!(arg_model_name.camelize)
       @model_class        = arg_model_name.camelize.constantize
       @subject_class      = arg_model_name.split('::').last

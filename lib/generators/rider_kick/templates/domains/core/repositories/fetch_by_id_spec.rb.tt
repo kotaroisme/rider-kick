@@ -11,7 +11,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     
     let(:valid_params) do
       Hashie::Mash.new(
-        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? %>,
+        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract %>,
         <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
       )
     end
@@ -25,7 +25,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
     context 'when <%= @variable_subject %> exists' do
       it 'fetches the <%= @variable_subject %> and returns success with entity', :aggregate_failures do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract -%>
         allow(<%= @model_class %>).to receive(:find_by).with(
           id: <%= @variable_subject %>_id,
           <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
@@ -43,7 +43,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
     context 'when <%= @variable_subject %> does not exist' do
       it 'returns failure with not found message' do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract -%>
         allow(<%= @model_class %>).to receive(:find_by).with(
           id: <%= @variable_subject %>_id,
           <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>

@@ -4,9 +4,6 @@ class <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class,
   contract do
     params(<%= domain_class_name %>::UseCases::Contract::Default.new.call) do
       required(:id).filled(:string)
-<% if @resource_owner_id.present? -%>
-      required(:<%= @resource_owner_id %>).filled(:string)
-<% end -%>
 <% @contract_update.each do |field| -%>
 <% next if field.include?("(:id)") -%>
       <%= field %>

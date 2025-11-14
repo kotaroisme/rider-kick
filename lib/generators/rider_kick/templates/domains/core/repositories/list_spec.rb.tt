@@ -6,7 +6,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
   describe '#call' do
     let(:params) do
       {
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         <%= @resource_owner_id %>: SecureRandom.uuid,
 <% end -%>
         page: 1,
@@ -18,7 +18,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
     context 'when fetching list successfully' do
       before do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         create_list(:<%= @variable_subject %>, 3, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
 <% else -%>
         create_list(:<%= @variable_subject %>, 3)
@@ -41,7 +41,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     context 'with search filters' do
 <% @search_able.each do |search_field| -%>
       it 'filters by <%= search_field %>', :aggregate_failures do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         # Create items with matching and non-matching <%= search_field %>
         matching_item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= search_field %>: 'SearchTerm123')
         non_matching_item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= search_field %>: 'DifferentValue')
@@ -65,7 +65,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
 <% end -%>
       it 'performs case-insensitive search', :aggregate_failures do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= @search_able.first %>: 'UPPERCASE_VALUE')
 <% else -%>
         item = create(:<%= @variable_subject %>, <%= @search_able.first %>: 'UPPERCASE_VALUE')
@@ -94,7 +94,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     end
 <% end -%>
 
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
     context 'with resource owner filter' do
       let(:other_owner_id) { SecureRandom.uuid }
 
@@ -120,7 +120,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
     context 'with pagination' do
       before do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         # Create 10 items for pagination testing
         create_list(:<%= @variable_subject %>, 10, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
 <% else -%>
@@ -154,7 +154,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
 
     context 'with sorting' do
       before do
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
         create_list(:<%= @variable_subject %>, 3, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
 <% else -%>
         create_list(:<%= @variable_subject %>, 3)

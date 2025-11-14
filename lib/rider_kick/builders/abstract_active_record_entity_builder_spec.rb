@@ -23,9 +23,9 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
   let(:mock_ar_model) do
     double('ActiveRecord::Base').tap do |model|
       allow(model).to receive(:attributes).and_return({
-        'id' => '123',
-        'name' => 'Test User',
-        'email' => 'test@example.com',
+        'id'         => '123',
+        'name'       => 'Test User',
+        'email'      => 'test@example.com',
         'created_at' => Time.current,
         'updated_at' => Time.current
       })
@@ -224,12 +224,12 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
     context 'with T::Struct schema (decorator)' do
       let(:t_struct_entity_class) do
         decorator_props = {
-          id: double('Prop', name: :id),
+          id:   double('Prop', name: :id),
           name: double('Prop', name: :name)
         }
         decorator = double('Decorator')
         allow(decorator).to receive(:props).and_return(decorator_props)
-        
+
         Class.new do
           define_singleton_method(:decorator) { decorator }
         end
@@ -284,7 +284,7 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
         key2 = double('Key', name: :name)
         schema_mock = double('Schema')
         allow(schema_mock).to receive(:keys).and_return([key1, key2])
-        
+
         Class.new do
           define_singleton_method(:schema) { schema_mock }
         end
@@ -424,7 +424,7 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
       expect(attributes[:user]).to be_nil
     end
 
-      it 'uses attribute_as when provided' do
+    it 'uses attribute_as when provided' do
       entity_class = test_entity_class
       related_builder = related_builder_class
       builder_class_with_alias = Class.new(described_class) do
@@ -596,7 +596,7 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
 
       builder = builder_class.new(ar_model)
       all_attributes = builder.send(:all_attributes_for_entity)
-      
+
       expect(all_attributes).to have_key(:id)
       expect(all_attributes).to have_key(:name)
       expect(all_attributes).to have_key(:email)
@@ -620,7 +620,7 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
         acts_as_builder_for_entity(entity_class)
         belongs_to :user, use: related_builder
         has_many :comments, use: comment_builder
-        
+
         define_method(:attributes_for_entity) do
           { custom_field: 'custom_value' }
         end
@@ -628,7 +628,7 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
 
       builder = custom_builder_class.new(ar_model)
       all_attributes = builder.send(:all_attributes_for_entity)
-      
+
       # Custom attributes should be last (override previous)
       expect(all_attributes[:custom_field]).to eq('custom_value')
       # AR attributes should be present
@@ -642,4 +642,3 @@ RSpec.describe RiderKick::Builders::AbstractActiveRecordEntityBuilder do
     end
   end
 end
-
