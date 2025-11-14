@@ -5,12 +5,8 @@ class <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class,
     params(<%= domain_class_name %>::UseCases::Contract::Default.new.call) do
       required(:id).filled(:string)
 <% @contract_fetch_by_id.each do |field| -%>
-<% next if field.include?("#{@resource_owner_id}") && @resource_owner_id.present? -%>
 <% next if field.include?("(:id)") -%>
       <%= field %>
-<% end -%>
-<% if @resource_owner_id.present? -%>
-      required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
     end
   end

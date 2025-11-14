@@ -271,7 +271,7 @@ RSpec.describe 'rider_kick:structure generator with engine and domain options' d
 
           expect {
             instance.generate_use_case
-          }.to raise_error(Thor::Error, /clean_arch.*--setup/i)
+          }.to raise_error(RiderKick::ValidationError, /clean_arch.*--setup/i)
         end
       end
     end

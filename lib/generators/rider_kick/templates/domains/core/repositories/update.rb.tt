@@ -7,7 +7,7 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
   end
 
   def call(builder: true)
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
     resource = <%= @model_class %>.find_by(id: @id, <%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
 <% else -%>
     resource = <%= @model_class %>.find_by(id: @id)

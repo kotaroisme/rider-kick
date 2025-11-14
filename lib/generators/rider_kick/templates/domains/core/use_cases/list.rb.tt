@@ -4,10 +4,9 @@ class <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class,
   contract do
     params(<%= domain_class_name %>::UseCases::Contract::Default.new.call, <%= domain_class_name %>::UseCases::Contract::Pagination.new.call) do
 <% @contract_list.each do |field| -%>
-<% next if field.include?("#{@resource_owner_id}") && @resource_owner_id.present? -%>
       <%= field %>
 <% end -%>
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
       required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
     end

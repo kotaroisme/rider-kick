@@ -86,7 +86,7 @@ RSpec.describe 'rider_kick:factory generator' do
       Dir.chdir(dir) do
         instance = klass.new(['Models::NonExistent'])
         expect { instance.generate_factory }
-          .to raise_error(Thor::Error)
+          .to raise_error(RiderKick::ModelNotFoundError)
       end
     end
   end

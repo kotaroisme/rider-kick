@@ -3,10 +3,11 @@
 require 'rails/generators'
 require 'active_support/inflector'
 require 'faker'
+require_relative 'base_generator'
 require_relative '../../rider-kick'
 
 module RiderKick
-  class FactoryGenerator < Rails::Generators::Base
+  class FactoryGenerator < BaseGenerator
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_model_name, type: :string, banner: 'Models::Article'
@@ -22,18 +23,9 @@ module RiderKick
 
     private
 
-    def configure_engine
-      if options[:engine].present?
-        RiderKick.configuration.engine_name = options[:engine]
-        say "Using engine: #{RiderKick.configuration.engine_name}", :green
-      else
-        RiderKick.configuration.engine_name = nil
-        say 'Using main app (no engine specified)', :blue
-      end
-    end
-
     def setup_variables
       @model_name = arg_model_name
+      validate_model_exists!(@model_name)
       @model_class = @model_name.constantize
       @variable_subject = @model_name.split('::').last.underscore.downcase
       @factory_name = @variable_subject
@@ -43,9 +35,9 @@ module RiderKick
       @attributes = @model_class.columns.reject do |column|
         skip_column?(column.name)
       end
-    rescue NameError => e
-      say "Error: Model #{arg_model_name} not found. Make sure the model exists.", :red
-      raise Thor::Error, e.message
+    rescue ModelNotFoundError => e
+      say "Error: #{e.message}", :red
+      raise
     end
 
     def skip_column?(column_name)
@@ -159,13 +151,69 @@ module RiderKick
     end
 
     def evaluate_faker_expression(expression)
-      # Evaluate the Faker expression and return as a quoted/formatted value
-
-      result = eval(expression)
+      # Safely evaluate the Faker expression using whitelist mapping
+      result = safe_evaluate_faker_expression(expression)
       format_static_value(result)
     rescue => e
       say "Warning: Could not evaluate '#{expression}': #{e.message}", :yellow
       expression # Fallback to original expression if evaluation fails
+    end
+
+    def safe_evaluate_faker_expression(expression)
+      # Check custom FakerMapping registry first
+      custom_mapping = RiderKick::FakerMapping.get(expression)
+      return custom_mapping.call if custom_mapping
+
+      # Whitelist mapping for safe Faker expression evaluation
+      faker_methods = {
+        'Faker::Internet.email' => -> { Faker::Internet.email },
+        'Faker::Name.name' => -> { Faker::Name.name },
+        'Faker::PhoneNumber.phone_number' => -> { Faker::PhoneNumber.phone_number },
+        'Faker::Address.full_address' => -> { Faker::Address.full_address },
+        'Faker::Address.city' => -> { Faker::Address.city },
+        'Faker::Address.country' => -> { Faker::Address.country },
+        'Faker::Internet.url' => -> { Faker::Internet.url },
+        'Faker::Lorem.sentence(word_count: 3)' => -> { Faker::Lorem.sentence(word_count: 3) },
+        'Faker::Alphanumeric.alphanumeric(number: 10)' => -> { Faker::Alphanumeric.alphanumeric(number: 10) },
+        'Faker::Lorem.word' => -> { Faker::Lorem.word },
+        'Faker::Lorem.paragraph(sentence_count: 3)' => -> { Faker::Lorem.paragraph(sentence_count: 3) },
+        'Faker::Lorem.sentence' => -> { Faker::Lorem.sentence },
+        'Faker::Number.between(from: 1, to: 100)' => -> { Faker::Number.between(from: 1, to: 100) },
+        'Faker::Number.between(from: 18, to: 80)' => -> { Faker::Number.between(from: 18, to: 80) },
+        'Faker::Number.between(from: 1000, to: 1000000)' => -> { Faker::Number.between(from: 1000, to: 1_000_000) },
+        'Faker::Number.number(digits: 5)' => -> { Faker::Number.number(digits: 5) },
+        'Faker::Number.number(digits: 10)' => -> { Faker::Number.number(digits: 10) },
+        'Faker::Number.decimal(l_digits: 2, r_digits: 2)' => -> { Faker::Number.decimal(l_digits: 2, r_digits: 2) },
+        'Faker::Commerce.price' => -> { Faker::Commerce.price },
+        'Faker::Number.decimal(l_digits: 4, r_digits: 2)' => -> { Faker::Number.decimal(l_digits: 4, r_digits: 2) },
+        '[true, false].sample' => -> { [true, false].sample },
+        'Faker::Date.between(from: 1.year.ago, to: Date.today)' => -> { Faker::Date.between(from: 1.year.ago, to: Date.today) },
+        'Time.zone.now' => -> { Time.zone.now },
+        'SecureRandom.uuid' => -> { SecureRandom.uuid },
+        '{ key: Faker::Lorem.word, value: Faker::Lorem.sentence }' => -> { { key: Faker::Lorem.word, value: Faker::Lorem.sentence } },
+        'Faker::Internet.ip_v4_address' => -> { Faker::Internet.ip_v4_address },
+        'Faker::Internet.ip_v4_cidr' => -> { Faker::Internet.ip_v4_cidr },
+        'Faker::Internet.mac_address' => -> { Faker::Internet.mac_address }
+      }
+
+      # Check if expression is in whitelist
+      if faker_methods.key?(expression)
+        faker_methods[expression].call
+      else
+        # Fallback: try to parse simple expressions
+        # Handle expressions with parameters (basic parsing)
+        case expression
+        when /^Faker::(\w+)\.(\w+)$/
+          # Simple Faker::Module.method format
+          module_name = Regexp.last_match(1)
+          method_name = Regexp.last_match(2)
+          faker_module = Faker.const_get(module_name)
+          faker_module.public_send(method_name)
+        else
+          # If not in whitelist and can't parse, raise error
+          raise ArgumentError, "Expression '#{expression}' is not in the safe whitelist"
+        end
+      end
     end
 
     def format_static_value(value)

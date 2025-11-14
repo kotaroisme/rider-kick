@@ -1,7 +1,8 @@
+require_relative 'base_generator'
 require_relative '../../rider-kick'
 
 module RiderKick
-  class CleanArchGenerator < Rails::Generators::Base
+  class CleanArchGenerator < BaseGenerator
     source_root File.expand_path('templates', __dir__)
 
     class_option :setup, type: :boolean, default: false, desc: 'Setup domain structure'
@@ -12,7 +13,12 @@ module RiderKick
       # Jika --engine dispecify, maka --setup otomatis dianggap true
       return if options.engine.present?
 
-      raise Thor::Error, 'The --setup option must be specified to create the domain structure.' unless options.setup
+      unless options.setup
+        raise ValidationError.new(
+          'The --setup option must be specified to create the domain structure.',
+          suggestion: 'Run: bin/rails generate rider_kick:clean_arch --setup'
+        )
+      end
     end
 
     def create_gem_dependencies
@@ -44,7 +50,8 @@ module RiderKick
         setup_rubocop
         setup_init_migration
         setup_models
-        setup_active_storage
+        setup_application_config
+        # setup_active_storage
         setup_rspec
         setup_readme
       end
@@ -60,8 +67,8 @@ module RiderKick
 
       if RiderKick.configuration.engine_name.present?
         # Engine context: domain_scope always starts with engine name
-        engine_prefix = RiderKick.configuration.engine_name.camelize
-        engine_underscored = RiderKick.configuration.engine_name.underscore
+        engine_prefix = RiderKick.configuration.engine_name.to_s.camelize
+        engine_underscored = RiderKick.configuration.engine_name.to_s.underscore
 
         if scope == engine_underscored
           # Default engine domain: engines/my_engine/app/domains/my_engine/
@@ -96,41 +103,13 @@ module RiderKick
       # Main app: "" (will become ApplicationRecord)
       if RiderKick.configuration.engine_name.present?
         # Engine context: use engine name
-        RiderKick.configuration.engine_name.camelize
+        RiderKick.configuration.engine_name.to_s.camelize
       else
         # Main app context: empty string for ApplicationRecord
         ''
       end
     end
 
-    def configure_engine
-      if options[:engine].present?
-        RiderKick.configuration.engine_name = options[:engine]
-        # Jika --engine dispecify, selalu ada scope engine nya
-        engine_prefix = options[:engine].underscore
-        domain_part = options[:domain] || ''
-        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
-        say "Using engine: #{RiderKick.configuration.engine_name}", :green
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-      elsif options[:domain].present?
-        # Jika hanya --domain yang dispecify, gunakan konfigurasi existing
-        RiderKick.configuration.domain_scope = options[:domain]
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-      else
-        # Jika tidak ada options, pertahankan konfigurasi existing
-        # Hanya tampilkan pesan jika belum pernah di-set
-        unless @engine_configured
-          if RiderKick.configuration.engine_name
-            say "Using engine: #{RiderKick.configuration.engine_name}", :green
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-          else
-            say 'Using main app (no engine specified)', :blue
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-          end
-          @engine_configured = true
-        end
-      end
-    end
 
     def setup_active_storage
       run 'rails active_storage:install'
@@ -290,6 +269,39 @@ module RiderKick
 
       # Create example factories file
       template 'spec/factories/.gitkeep', File.join('spec/factories/.gitkeep')
+    end
+
+    def setup_application_config
+      application_config_path = 'config/application.rb'
+      
+      # Check if file exists
+      unless File.exist?(application_config_path)
+        say "File #{application_config_path} not found, skipping application config setup", :yellow
+        return
+      end
+
+      # Check if config already exists
+      application_content = File.read(application_config_path)
+      if application_content.include?("config.paths['db/migrate']")
+        say "Migration paths config already exists in #{application_config_path}", :green
+        return
+      end
+
+      # Find the class Application block and inject config after class definition
+      # Look for pattern: class Application < Rails::Application
+      if application_content.match(/class\s+Application\s+<\s+Rails::Application/)
+        # Try to inject right after class definition line
+        inject_into_file application_config_path, after: /class\s+Application\s+<\s+Rails::Application\s*\n/ do
+          <<~RUBY
+    # Load migrations from engines
+    config.paths['db/migrate'] << './**/db/migrate'
+
+RUBY
+        end
+        say "Added migration paths config to #{application_config_path}", :green
+      else
+        say "Could not find Application class in #{application_config_path}, skipping", :yellow
+      end
     end
   end
 end

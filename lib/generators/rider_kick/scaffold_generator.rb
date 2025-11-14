@@ -6,10 +6,11 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/enumerable'
 require 'hashie'
 require 'yaml'
+require_relative 'base_generator'
 require_relative '../../rider-kick'
 
 module RiderKick
-  class ScaffoldGenerator < Rails::Generators::Base
+  class ScaffoldGenerator < BaseGenerator
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_structure, type: :string, default: '', banner: ''
@@ -75,40 +76,9 @@ module RiderKick
       end
     end
 
-    def configure_engine
-      if options[:engine].present?
-        RiderKick.configuration.engine_name = options[:engine]
-        # Jika --engine dispecify, selalu ada scope engine nya
-        engine_prefix = options[:engine].underscore
-        domain_part = options[:domain] || ''
-        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
-        say "Using engine: #{RiderKick.configuration.engine_name}", :green
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-      elsif options[:domain].present?
-        # Jika hanya --domain yang dispecify, gunakan konfigurasi existing
-        RiderKick.configuration.domain_scope = options[:domain]
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-      else
-        # Jika tidak ada options, pertahankan konfigurasi existing
-        # Hanya tampilkan pesan jika belum pernah di-set
-        unless @engine_configured
-          if RiderKick.configuration.engine_name
-            say "Using engine: #{RiderKick.configuration.engine_name}", :green
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-          else
-            say 'Using main app (no engine specified)', :blue
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-          end
-          @engine_configured = true
-        end
-      end
-    end
 
     def validation!
-      unless Dir.exist?(RiderKick.configuration.domains_path)
-        say 'Error must create clean arch structure first!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
-      end
+      validate_domains_path!
     end
 
     def validate_repository_filters!
@@ -123,12 +93,13 @@ module RiderKick
         field_name = match[1]
 
         unless @model_class.column_names.include?(field_name)
-          raise Thor::Error, <<~ERROR
-            Repository filter error di '#{arg_structure}_structure.yaml':
-            Field '#{field_name}' tidak ditemukan di model #{@model_class}.
-
-            Available columns: #{@model_class.column_names.join(', ')}
-          ERROR
+          raise ValidationError.new(
+            "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
+            structure_file: "#{arg_structure}_structure.yaml",
+            field_name: field_name,
+            model_class: @model_class.to_s,
+            available_columns: @model_class.column_names
+          )
         end
       end
     end
@@ -139,18 +110,26 @@ module RiderKick
       missing_fields = @entity_db_fields - @model_class.column_names
 
       if missing_fields.any?
-        raise Thor::Error, <<~ERROR
-          Entity configuration error di '#{arg_structure}_structure.yaml':
-          Field(s) tidak ditemukan di model #{@model_class}: #{missing_fields.join(', ')}
-
-          Available columns: #{@model_class.column_names.join(', ')}
-
-          Fix: Update section 'entity.db_attributes' di YAML file.
-        ERROR
+        raise ValidationError.new(
+          "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
+          structure_file: "#{arg_structure}_structure.yaml",
+          missing_fields: missing_fields,
+          model_class: @model_class.to_s,
+          available_columns: @model_class.column_names,
+          suggestion: "Update section 'entity.db_attributes' di YAML file"
+        )
       end
     end
 
     def setup_variables
+      setup_structure_config
+      setup_model_variables
+      setup_contract_variables
+      setup_entity_variables
+      setup_repository_variables
+    end
+
+    def setup_structure_config
       # Determine structure file path based on engine configuration
       structure_path = if RiderKick.configuration.engine_name.present?
         # For engines, read structure file from engine's db/structures directory
@@ -161,20 +140,31 @@ module RiderKick
         "db/structures/#{arg_structure}_structure.yaml"
       end
 
+      validate_yaml_format!(structure_path)
       config     = YAML.load_file(structure_path)
       @structure = Hashie::Mash.new(config)
+    end
 
-      # Mengambil detail konfigurasi
-      model_name    = @structure.model
-      @model_class  = model_name.camelize.constantize # Pindahkan ini ke atas
+    def setup_model_variables
+      model_name = @structure.model
+      validate_model_exists!(model_name.camelize)
+      @model_class = model_name.camelize.constantize
 
-      resource_name = @structure.resource_name.singularize.underscore.downcase
-      entity        = @structure.entity || {}
+      @variable_subject = model_name.split('::').last.underscore.downcase
+      @subject_class    = @variable_subject.camelize
+      @fields           = contract_fields
 
-      @actor                = @structure.actor
-      @resource_owner_id    = @structure.resource_owner_id
-      @resource_owner       = @structure.resource_owner
-      @services             = @structure.domains || {}
+      # Column metadata
+      @columns_meta      = columns_meta
+      @columns_meta_hash = @columns_meta.index_by { |c| c[:name] }
+
+      # Type mappings
+      @type_mapping        = RiderKick.configuration.type_mapping
+      @entity_type_mapping = RiderKick.configuration.entity_type_mapping
+    end
+
+    def setup_contract_variables
+      @services = @structure.domains || {}
 
       # Membaca kontrak dinamis (dari Peningkatan #1)
       @contract_list        = @services.action_list&.use_case&.contract || []
@@ -182,40 +172,122 @@ module RiderKick
       @contract_create      = @services.action_create&.use_case&.contract || []
       @contract_update      = @services.action_update&.use_case&.contract || []
       @contract_destroy     = @services.action_destroy&.use_case&.contract || []
+    end
 
-      # Membaca DSL filter repositori baru (Peningkatan #2)
-      @repository_list_filters = @services.action_list&.repository&.filters || []
+    def setup_entity_variables
+      resource_name = @structure.resource_name.singularize.underscore.downcase
+      entity        = @structure.entity || {}
 
-      # --- AWAL BLOK MODIFIKASI: PERBAIKAN (PENINGKATAN #3) ---
+      @scope_path       = resource_name.pluralize.underscore.downcase
+      @scope_class      = @scope_path.camelize
+      @scope_subject    = @scope_path.singularize
 
       # Membaca definisi uploader baru (array of hashes)
       @uploaders = (@structure.uploaders || []).map { |up| Hashie::Mash.new(up) }
 
       # Membaca atribut DB eksplisit (array string)
       @entity_db_fields = entity.respond_to?(:db_attributes) ? entity.db_attributes || [] : []
+    end
 
-      # --- AKHIR BLOK MODIFIKASI ---
+    def setup_repository_variables
+      @actor                = @structure.actor
+      @resource_owner_id    = @structure.resource_owner_id
+      @resource_owner       = @structure.resource_owner
+      @search_able         = @structure.search_able
 
-      @variable_subject = model_name.split('::').last.underscore.downcase
-      @scope_path       = resource_name.pluralize.underscore.downcase
-      @scope_class      = @scope_path.camelize
-      @scope_subject    = @scope_path.singularize
-      @subject_class    = @variable_subject.camelize
-      @search_able      = @structure.search_able
+      # Membaca DSL filter repositori baru (Peningkatan #2)
+      @repository_list_filters = @services.action_list&.repository&.filters || []
 
-      @fields           = contract_fields
-
-      @route_scope_path = arg_scope.fetch('scope', '').to_s.downcase
+      # Route scope
+      @route_scope_path  = arg_scope.fetch('scope', '').to_s.downcase
       @route_scope_class = @route_scope_path.camelize
 
-      # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
-      # Tambahkan hash metadata kolom, sama seperti di structure_generator
-      @columns_meta      = columns_meta
-      @columns_meta_hash = @columns_meta.index_by { |c| c[:name] }
-      # --- AKHIR BLOK MODIFIKASI ---
+      # Baca actor_id dari structure.yaml jika ada, jika tidak generate dari actor
+      @actor_id = if @structure.actor_id.present?
+        @structure.actor_id.to_s
+      elsif @actor.present?
+        "#{@actor.to_s.downcase}_id"
+      else
+        nil
+      end
 
-      @type_mapping        = RiderKick::TYPE_MAPPING
-      @entity_type_mapping = RiderKick::ENTITY_TYPE_MAPPING
+      # Set flag untuk setiap action apakah resource_owner_id atau actor_id ada di contract
+      # Ini digunakan di template repository untuk conditional logic
+      @has_resource_owner_id_in_list_contract = field_exists_in_contract?(@resource_owner_id, 'list')
+      @has_resource_owner_id_in_fetch_by_id_contract = field_exists_in_contract?(@resource_owner_id, 'fetch_by_id')
+      @has_resource_owner_id_in_create_contract = field_exists_in_contract?(@resource_owner_id, 'create')
+      @has_resource_owner_id_in_update_contract = field_exists_in_contract?(@resource_owner_id, 'update')
+      @has_resource_owner_id_in_destroy_contract = field_exists_in_contract?(@resource_owner_id, 'destroy')
+
+      @has_actor_id_in_list_contract = field_exists_in_contract?(@actor_id, 'list')
+      @has_actor_id_in_fetch_by_id_contract = field_exists_in_contract?(@actor_id, 'fetch_by_id')
+      @has_actor_id_in_create_contract = field_exists_in_contract?(@actor_id, 'create')
+      @has_actor_id_in_update_contract = field_exists_in_contract?(@actor_id, 'update')
+      @has_actor_id_in_destroy_contract = field_exists_in_contract?(@actor_id, 'destroy')
+    end
+
+    # Check apakah field (actor_id atau resource_owner_id) ada di contract untuk action tertentu
+    def field_exists_in_contract?(field_name, action)
+      return false if field_name.blank?
+
+      # Get contract untuk action tertentu
+      contract = case action.to_s
+      when 'list'
+        @contract_list
+      when 'fetch', 'fetch_by_id'
+        @contract_fetch_by_id
+      when 'create'
+        @contract_create
+      when 'update'
+        @contract_update
+      when 'destroy'
+        @contract_destroy
+      else
+        []
+      end || []
+
+      # Check apakah contract string mengandung field name
+      # Pattern: "required(:field_name)" atau "optional(:field_name)"
+      # Contoh: "required(:account_id).filled(:string)" -> match untuk "account_id"
+      contract.any? do |contract_line|
+        contract_line.to_s.match?(/[:\(]#{Regexp.escape(field_name.to_s)}[\):]/)
+      end
+    end
+
+    # Helper method untuk template: check apakah resource_owner_id ada di contract untuk action tertentu
+    def has_resource_owner_id_in_contract?(action)
+      case action.to_s
+      when 'list'
+        @has_resource_owner_id_in_list_contract
+      when 'fetch', 'fetch_by_id'
+        @has_resource_owner_id_in_fetch_by_id_contract
+      when 'create'
+        @has_resource_owner_id_in_create_contract
+      when 'update'
+        @has_resource_owner_id_in_update_contract
+      when 'destroy'
+        @has_resource_owner_id_in_destroy_contract
+      else
+        false
+      end
+    end
+
+    # Helper method untuk template: check apakah actor_id ada di contract untuk action tertentu
+    def has_actor_id_in_contract?(action)
+      case action.to_s
+      when 'list'
+        @has_actor_id_in_list_contract
+      when 'fetch', 'fetch_by_id'
+        @has_actor_id_in_fetch_by_id_contract
+      when 'create'
+        @has_actor_id_in_create_contract
+      when 'update'
+        @has_actor_id_in_update_contract
+      when 'destroy'
+        @has_actor_id_in_destroy_contract
+      else
+        false
+      end
     end
 
     def is_singular?(str)

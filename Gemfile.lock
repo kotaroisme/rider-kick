@@ -257,15 +257,15 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (>= 2.4, < 3.0)
-  debug
-  faker
+  debug (>= 1.0, < 2.0)
+  faker (>= 3.0, < 4.0)
   generator_spec (>= 0.9, < 1.0)
   rake (>= 13.0, < 14.0)
   rider-kick!
   rspec (>= 3.12, < 4.0)
   rubocop (>= 1.63, < 2.0)
-  rubocop-performance
-  rubocop-rails-omakase
+  rubocop-performance (>= 1.0, < 2.0)
+  rubocop-rails-omakase (>= 1.0, < 2.0)
   rubocop-rspec (>= 3.0, < 4.0)
 
 BUNDLED WITH

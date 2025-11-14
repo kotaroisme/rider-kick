@@ -5,10 +5,11 @@ require 'active_support/inflector'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/enumerable'
 require 'hashie'
+require_relative 'base_generator'
 require_relative '../../rider-kick'
 
 module RiderKick
-  class Structure < Rails::Generators::Base
+  class Structure < BaseGenerator
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_model_name, type: :string, default: '', banner: 'Models::Name'
@@ -25,40 +26,8 @@ module RiderKick
 
     private
 
-    def configure_engine
-      if options[:engine].present?
-        RiderKick.configuration.engine_name = options[:engine]
-        # Jika --engine dispecify, selalu ada scope engine nya
-        engine_prefix = options[:engine].underscore
-        domain_part = options[:domain] || ''
-        RiderKick.configuration.domain_scope = domain_part.empty? ? engine_prefix + '/' : engine_prefix + '/' + domain_part
-        say "Using engine: #{RiderKick.configuration.engine_name}", :green
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-      elsif options[:domain].present?
-        # Jika hanya --domain yang dispecify, gunakan konfigurasi existing
-        RiderKick.configuration.domain_scope = options[:domain]
-        say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-      else
-        # Jika tidak ada options, pertahankan konfigurasi existing
-        # Hanya tampilkan pesan jika belum pernah di-set
-        unless @engine_configured
-          if RiderKick.configuration.engine_name
-            say "Using engine: #{RiderKick.configuration.engine_name}", :green
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :green
-          else
-            say 'Using main app (no engine specified)', :blue
-            say "Using domain scope: #{RiderKick.configuration.domain_scope}", :blue
-          end
-          @engine_configured = true
-        end
-      end
-    end
-
     def validation!
-      unless Dir.exist?(RiderKick.configuration.domains_path)
-        say 'Error must create clean arch structure first!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
-      end
+      validate_domains_path!
 
       # Pastikan parameter wajib tersedia
       actor = arg_settings['actor'].to_s.strip
@@ -66,20 +35,33 @@ module RiderKick
       resource_owner_id = arg_settings['resource_owner_id'].to_s.strip
 
       if actor.blank?
-        raise Thor::Error, "Missing required setting: actor. Contoh: 'actor:user'"
+        raise ValidationError.new(
+          "Missing required setting: actor. Contoh: 'actor:user'",
+          setting: 'actor',
+          provided_settings: arg_settings.keys
+        )
       end
 
       if resource_owner.blank?
-        raise Thor::Error, "Missing required setting: resource_owner. Contoh: 'resource_owner:account'"
+        raise ValidationError.new(
+          "Missing required setting: resource_owner. Contoh: 'resource_owner:account'",
+          setting: 'resource_owner',
+          provided_settings: arg_settings.keys
+        )
       end
 
       if resource_owner_id.blank?
-        raise Thor::Error, "Missing required setting: resource_owner_id. Contoh: 'resource_owner_id:account_id'"
+        raise ValidationError.new(
+          "Missing required setting: resource_owner_id. Contoh: 'resource_owner_id:account_id'",
+          setting: 'resource_owner_id',
+          provided_settings: arg_settings.keys
+        )
       end
     end
 
     def setup_variables
       @variable_subject   = arg_model_name.split('::').last.underscore.downcase
+      validate_model_exists!(arg_model_name.camelize)
       @model_class        = arg_model_name.camelize.constantize
       @subject_class      = arg_model_name.split('::').last
       @scope_path         = @subject_class.pluralize.underscore.downcase
@@ -93,8 +75,8 @@ module RiderKick
       @resource_owner_id  = arg_settings['resource_owner_id'].to_s.presence
       @columns            = columns_meta
 
-      @type_mapping = RiderKick::TYPE_MAPPING
-      @entity_type_mapping = RiderKick::ENTITY_TYPE_MAPPING
+      @type_mapping = RiderKick.configuration.type_mapping
+      @entity_type_mapping = RiderKick.configuration.entity_type_mapping
 
       @columns_meta_hash = @columns.index_by { |c| c[:name] }
 

@@ -3,7 +3,7 @@
 require 'active_support/inflector'
 
 module RiderKick
-  TYPE_MAPPING = {
+  DEFAULT_TYPE_MAPPING = {
     'uuid'     => ':string',
     'string'   => ':string',
     'text'     => ':string',
@@ -15,9 +15,8 @@ module RiderKick
     'upload'   => 'Types::File',
     'datetime' => ':time'
   }.freeze
-  public_constant :TYPE_MAPPING
 
-  ENTITY_TYPE_MAPPING = {
+  DEFAULT_ENTITY_TYPE_MAPPING = {
     'uuid'     => 'Types::Strict::String',
     'string'   => 'Types::Strict::String',
     'text'     => 'Types::Strict::String',
@@ -28,10 +27,36 @@ module RiderKick
     'date'     => 'Types::Strict::Date',
     'datetime' => 'Types::Strict::Time'
   }.freeze
+
+  # Backward compatibility constants
+  TYPE_MAPPING = DEFAULT_TYPE_MAPPING
+  ENTITY_TYPE_MAPPING = DEFAULT_ENTITY_TYPE_MAPPING
+  public_constant :TYPE_MAPPING
   public_constant :ENTITY_TYPE_MAPPING
 
+  # Faker mapping registry for factory generator customization
+  class FakerMapping
+    @mappings = {}
+
+    class << self
+      attr_reader :mappings
+
+      def register(expression, &block)
+        @mappings[expression] = block
+      end
+
+      def get(expression)
+        @mappings[expression]
+      end
+
+      def clear
+        @mappings = {}
+      end
+    end
+  end
+
   class Configuration
-    attr_reader :domains_path, :models_path, :engine_name, :domain_scope
+    attr_reader :domains_path, :models_path, :engine_name, :domain_scope, :template_path
     attr_accessor :entities_path, :adapters_path
 
     def initialize
@@ -41,20 +66,55 @@ module RiderKick
       @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
       @models_path   = detect_models_path
+      @template_path = nil
+      @type_mapping = DEFAULT_TYPE_MAPPING.dup
+      @entity_type_mapping = DEFAULT_ENTITY_TYPE_MAPPING.dup
+    end
+
+    def type_mapping
+      @type_mapping
+    end
+
+    def entity_type_mapping
+      @entity_type_mapping
+    end
+
+    def register_type_mapping(db_type, dry_type)
+      @type_mapping[db_type.to_s] = dry_type.to_s
+    end
+
+    def register_entity_type_mapping(db_type, dry_type)
+      @entity_type_mapping[db_type.to_s] = dry_type.to_s
     end
 
     def domains_path=(path)
+      validate_path_format!(path, 'domains_path')
       @domains_path = File.expand_path(path)
       @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
     end
 
     def models_path=(path)
+      validate_path_format!(path, 'models_path')
       @models_path = File.expand_path(path)
     end
 
+    def template_path=(path)
+      if path.nil? || path.to_s.strip.empty?
+        @template_path = nil
+      else
+        validate_path_format!(path, 'template_path')
+        @template_path = File.expand_path(path)
+      end
+    end
+
     def engine_name=(name)
-      @engine_name = name.nil? || name.to_s.strip.empty? ? nil : name.to_s
+      if name.nil? || name.to_s.strip.empty?
+        @engine_name = nil
+      else
+        validate_engine_name_format!(name)
+        @engine_name = name.to_s
+      end
       @models_path = detect_models_path
       @domains_path = detect_domains_path
       @entities_path = File.join(@domains_path, 'entities')
@@ -62,13 +122,63 @@ module RiderKick
     end
 
     def domain_scope=(scope)
-      @domain_scope = scope.nil? || scope.to_s.strip.empty? ? '' : scope.to_s
+      if scope.nil? || scope.to_s.strip.empty?
+        @domain_scope = ''
+      else
+        validate_domain_scope_format!(scope)
+        @domain_scope = scope.to_s
+      end
       @domains_path = detect_domains_path
       @entities_path = File.join(@domains_path, 'entities')
       @adapters_path = File.join(@domains_path, 'adapters')
     end
 
     private
+
+    def validate_path_format!(path, attribute_name)
+      path_str = path.to_s.strip
+      return if path_str.empty?
+
+      # Basic path validation - should not contain invalid characters
+      if path_str.match?(/[<>:"|?*\x00-\x1f]/)
+        raise RiderKick::ConfigurationError.new(
+          "Invalid #{attribute_name} format: contains invalid characters",
+          attribute: attribute_name,
+          value: path_str
+        )
+      end
+    end
+
+    def validate_engine_name_format!(name)
+      name_str = name.to_s.strip
+      return if name_str.empty?
+
+      # Engine name can be CamelCase (e.g., 'Core', 'Admin') or underscore_case (e.g., 'order_engine')
+      # Both formats are acceptable and will be converted as needed
+      unless name_str.match?(/^[A-Z][a-zA-Z0-9]*$/) || name_str.match?(/^[a-z][a-z0-9_]*$/)
+        raise RiderKick::ConfigurationError.new(
+          "Invalid engine_name format: must be CamelCase (e.g., 'Core', 'Admin') or underscore_case (e.g., 'order_engine')",
+          attribute: 'engine_name',
+          value: name_str,
+          suggestion: "Use CamelCase format like 'Core' or 'Admin', or underscore_case like 'order_engine'"
+        )
+      end
+    end
+
+    def validate_domain_scope_format!(scope)
+      scope_str = scope.to_s.strip
+      return if scope_str.empty?
+
+      # Domain scope should contain only alphanumeric, slash, underscore, hyphen
+      unless scope_str.match?(/^[a-zA-Z0-9\/_-]+$/)
+        raise RiderKick::ConfigurationError.new(
+          "Invalid domain_scope format: must contain only alphanumeric characters, slashes, underscores, and hyphens",
+          attribute: 'domain_scope',
+          value: scope_str,
+          suggestion: "Use format like 'core/', 'admin/', 'api/v1/'"
+        )
+      end
+    end
 
     def detect_engine_name
       # Detect engine dari struktur file system
