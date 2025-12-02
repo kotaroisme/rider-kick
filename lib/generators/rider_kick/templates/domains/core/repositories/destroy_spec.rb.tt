@@ -8,10 +8,10 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     let(:<%= @variable_subject %>_id) { 'test-id-123' }
     
     let(:valid_params) do
-      Hashie::Mash.new(
+      Hashie::Mash.new({
         id: <%= @variable_subject %>_id<% if @resource_owner_id.present? && @has_resource_owner_id_in_destroy_contract %>,
         <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
-      )
+      })
     end
 
     let(:error_messages) do
@@ -86,4 +86,3 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     end
   end
 end
-

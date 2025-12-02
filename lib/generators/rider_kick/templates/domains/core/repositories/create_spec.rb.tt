@@ -9,7 +9,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
 
     let(:valid_params) do
-      Hashie::Mash.new(
+      Hashie::Mash.new({
 <% if @resource_owner_id.present? -%>
         <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
 <% end -%>
@@ -22,7 +22,7 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
         <%= field %>: '<%= field %>_value'<%= index < @fields.length - 1 ? ',' : '' %>
 <% end -%>
 <% end -%>
-      )
+      })
     end
 
     let(:error_messages) do
@@ -76,4 +76,3 @@ RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= 
     end
   end
 end
-

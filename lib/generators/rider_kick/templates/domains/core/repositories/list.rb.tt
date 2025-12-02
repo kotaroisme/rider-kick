@@ -12,17 +12,17 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
 <% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
     resources = <%= @model_class %>.where(<%= @resource_owner_id %>: @params.<%= @resource_owner_id %>)
 <% else -%>
-    resources = <%= @model_class %>.all
+    resources = <%= @model_class %>
 <% end -%>
 <% if @search_able.present? && @search_able.any? -%>
     if @search.present?
       resources = resources.where("<%= (@search_able || []).map { |f| "LOWER(#{f}) LIKE :search" }.join(' OR ') %>", search: "%#{@search.to_s.downcase}%")
     end
 <% end -%>
-    return Success Hashie::Mash.new(response: [], meta: {}) unless resources.present?
+    return Success Hashie::Mash.new({response: [], meta: {}}) unless resources.present?
     pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
     response      = results.map { |result| <%= domain_class_name %>::Builders::<%= @subject_class %>.new(result).build }
-    Success Hashie::Mash.new(response: response, meta: paginate!(pagy))
+    Success Hashie::Mash.new({response: response, meta: paginate!(pagy)})
   end
 
 end
