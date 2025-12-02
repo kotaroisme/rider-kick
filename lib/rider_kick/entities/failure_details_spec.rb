@@ -2,7 +2,7 @@
 
 RSpec.describe RiderKick::Entities::FailureDetails do
   it 'from_array menggabungkan pesan secara dinamis' do
-    fd = described_class.from_array(%w[alpha beta gamma])
+    fd = described_class.from_array(['alpha', 'beta', 'gamma'])
     expect(fd.message).to eq('alpha, beta, gamma')
     expect(fd.type).to eq(:error)
     expect(fd.other_properties).to eq({})

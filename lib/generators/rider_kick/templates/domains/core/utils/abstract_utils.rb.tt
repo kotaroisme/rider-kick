@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class Core::Utils::AbstractUtils
+class <%= domain_class_name %>::Utils::AbstractUtils
   include Dry::Monads[:result, :do]
 
   def http
-    extend(Core::Utils::RequestMethods)
+    extend(<%= domain_class_name %>::Utils::RequestMethods)
   end
 
   def error_messages_for(record)
@@ -14,7 +14,7 @@ class Core::Utils::AbstractUtils
   def build_errors(resource)
     errors = []
     resource.errors.each do |error|
-      errors << Core::Builders::Error.new(error.as_json).build
+      errors << <%= domain_class_name %>::Builders::Error.new(error.as_json).build
     end
     errors
   end

@@ -1,0 +1,190 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+  describe '#call' do
+    let(:params) do
+      {
+<% if @resource_owner_id.present? -%>
+        <%= @resource_owner_id %>: SecureRandom.uuid,
+<% end -%>
+        page: 1,
+        items: 10
+      }
+    end
+
+    let(:repository) { described_class }
+
+    context 'when fetching list successfully' do
+      before do
+<% if @resource_owner_id.present? -%>
+        create_list(:<%= @variable_subject %>, 3, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
+<% else -%>
+        create_list(:<%= @variable_subject %>, 3)
+<% end -%>
+      end
+      it 'returns paginated <%= @scope_path %>', :aggregate_failures do
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+      end
+
+      it 'returns correct number of items per page' do
+        result = repository.new(params: params).call
+
+        expect(result.success[:response].length).to be <= params[:items]
+      end
+    end
+
+<% if @search_able.present? && @search_able.any? -%>
+    context 'with search filters' do
+<% @search_able.each do |search_field| -%>
+      it 'filters by <%= search_field %>', :aggregate_failures do
+<% if @resource_owner_id.present? -%>
+        # Create items with matching and non-matching <%= search_field %>
+        matching_item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= search_field %>: 'SearchTerm123')
+        non_matching_item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= search_field %>: 'DifferentValue')
+<% else -%>
+        # Create items with matching and non-matching <%= search_field %>
+        matching_item = create(:<%= @variable_subject %>, <%= search_field %>: 'SearchTerm123')
+        non_matching_item = create(:<%= @variable_subject %>, <%= search_field %>: 'DifferentValue')
+<% end -%>
+
+        params[:search] = 'searchterm'
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+        expect(result.success[:meta]).to be_present
+        # Verify that matching item is included
+        response_ids = result.success[:response].map { |item| item[:id] }
+        expect(response_ids).to include(matching_item.id)
+        # Verify that non-matching item is not included
+        expect(response_ids).not_to include(non_matching_item.id)
+      end
+
+<% end -%>
+      it 'performs case-insensitive search', :aggregate_failures do
+<% if @resource_owner_id.present? -%>
+        item = create(:<%= @variable_subject %>, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>], <%= @search_able.first %>: 'UPPERCASE_VALUE')
+<% else -%>
+        item = create(:<%= @variable_subject %>, <%= @search_able.first %>: 'UPPERCASE_VALUE')
+<% end -%>
+
+        params[:search] = 'uppercase'
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_present
+        response_ids = result.success[:response].map { |item| item[:id] }
+        expect(response_ids).to include(item.id)
+      end
+
+      it 'returns empty result when no matches found' do
+        params[:search] = 'NonExistentValue12345'
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+        expect(result.success[:response]).to be_empty
+        expect(result.success[:meta]).to be_empty
+      end
+    end
+<% else -%>
+    context 'with search filters' do
+      # Add search filter tests here if needed
+    end
+<% end -%>
+
+<% if @resource_owner_id.present? -%>
+    context 'with resource owner filter' do
+      let(:other_owner_id) { SecureRandom.uuid }
+
+      before do
+        # Create items for different owners
+        create_list(:<%= @variable_subject %>, 2, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
+        create_list(:<%= @variable_subject %>, 2, <%= @resource_owner_id %>: other_owner_id)
+      end
+
+      it 'filters by resource owner', :aggregate_failures do
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_present
+        expect(result.success[:response]).to be_an(Array)
+        # Verify all returned items belong to the specified owner
+        result.success[:response].each do |item|
+          expect(item[:<%= @resource_owner_id %>]).to eq(params[:<%= @resource_owner_id %>])
+        end
+        expect(result.success[:meta][:total_count]).to eq(2)
+      end
+    end
+<% end -%>
+
+    context 'with pagination' do
+      before do
+<% if @resource_owner_id.present? -%>
+        # Create 10 items for pagination testing
+        create_list(:<%= @variable_subject %>, 10, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
+<% else -%>
+        # Create 10 items for pagination testing
+        create_list(:<%= @variable_subject %>, 10)
+<% end -%>
+      end
+
+      it 'paginates correctly with page 3 and items 3', :aggregate_failures do
+        params[:page] = 3
+        params[:items] = 3
+
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+        expect(result.success[:meta][:page]).to eq(3)
+        expect(result.success[:meta][:total_count]).to eq(10)
+      end
+
+      it 'returns empty array for page beyond available pages' do
+        params[:page] = 999
+        params[:items] = 10
+
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+        expect(result.success[:response]).to be_empty
+        expect(result.success[:meta][:total_count]).to eq(10)
+      end
+    end
+
+    context 'with sorting' do
+      before do
+<% if @resource_owner_id.present? -%>
+        create_list(:<%= @variable_subject %>, 3, <%= @resource_owner_id %>: params[:<%= @resource_owner_id %>])
+<% else -%>
+        create_list(:<%= @variable_subject %>, 3)
+<% end -%>
+      end
+
+      it 'sorts by created_at descending by default', :aggregate_failures do
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_present
+        expect(result.success[:response].length).to be > 0
+
+        # Verify descending order (newest first)
+        timestamps = result.success[:response].map { |item| item[:created_at] }
+        expect(timestamps).to eq(timestamps.sort.reverse)
+      end
+    end
+
+    context 'when no resources exist' do
+      before do
+        <%= @model_class %>.destroy_all
+      end
+
+      it 'returns empty response with zero count', :aggregate_failures do
+        result = repository.new(params: params).call
+
+        expect(result.success[:response]).to be_an(Array)
+        expect(result.success[:response]).to be_empty
+        expect(result.success[:meta]).to be_empty
+      end
+    end
+  end
+end

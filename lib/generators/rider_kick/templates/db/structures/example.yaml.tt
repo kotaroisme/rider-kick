@@ -1,7 +1,13 @@
+# RiderKick Structure Definition for <%= @scope_class %>
+# This file acts as a centralized contract for code generation.
+# Modifying this file and re-running 'rider_kick:scaffold' will update the domain logic.
+
 model: <%= @model_class %>
 resource_name: <%= @scope_path %>
-resource_owner_id: <%= @resource_owner_id %>
-actor: <%= @actor %>
+resource_owner_id: <%= @resource_owner_id %> # account_id
+resource_owner: <%= @resource_owner %> # account
+actor: <%= @actor %> # user
+actor_id: <%= @actor_id %> # user_id
 
 fields:
 <% @fields.each do |f| -%>
@@ -11,122 +17,190 @@ fields:
 - <%= f %>
 <% end -%>
 
+<% if entity_uploader_definitions.empty? -%>
+uploaders: []
+<% else -%>
 uploaders:
-<% @uploaders.each do |f| -%>
-- <%= f %>
+<% entity_uploader_definitions.each do |uploader_hash| -%>
+- { name: '<%= uploader_hash[:name] %>', type: '<%= uploader_hash[:type] %>' }
+<% end -%>
 <% end -%>
 
+<% search_able_fields = arg_settings['search_able'].to_s.split(',').map(&:strip).reject(&:blank?) -%>
+<% if search_able_fields.empty? -%>
+search_able: []
+<% else -%>
 search_able:
-<% @search_able.each do |f| -%>
+<% search_able_fields.each do |f| -%>
 - <%= f %>
+<% end -%>
 <% end -%>
 
 # ---- Enriched metadata (opsional, untuk tooling/insight) ----
 schema:
-columns:
+  columns:
+<% if columns_meta.empty? -%>
+  []
+<% else -%>
 <% columns_meta.each do |c| -%>
-- name: <%= c[:name] %>
-type: <%= c[:type] %>
-sql_type: <%= c[:sql_type] %>
-null: <%= c[:null] %>
+  - name: <%= c[:name] %>
+    type: <%= c[:type] %>
+    sql_type: <%= c[:sql_type] || 'null' %>
+    null: <%= c[:null] || 'false' %>
 <% if c[:default].present? -%>
-default: <%= c[:default].inspect %>
+    default: <%= c[:default].inspect %>
 <% end -%>
 <% if c[:precision] || c[:scale] -%>
-precision: <%= c[:precision] || 'null' %>
-scale: <%= c[:scale] || 'null' %>
+    precision: <%= c[:precision] || 'null' %>
+    scale: <%= c[:scale] || 'null' %>
 <% end -%>
 <% if c[:limit] -%>
-limit: <%= c[:limit] %>
+    limit: <%= c[:limit] %>
 <% end -%>
 <% end -%>
-foreign_keys:
+<% end -%>
+  foreign_keys:
 <% (fkeys_meta.presence || []).each do |fk| -%>
-- column: <%= fk[:column] %>
-to_table: <%= fk[:to_table] %>
+  - column: <%= fk[:column] %>
+    to_table: <%= fk[:to_table] %>
 <% end -%>
-indexes:
+<% if fkeys_meta.empty? -%>
+    []
+<% end -%>
+  indexes:
 <% (indexes_meta.presence || []).each do |ix| -%>
-- columns: [<%= ix[:columns].join(', ') %>]
-unique: <%= ix[:unique] %>
+  - columns: [<%= ix[:columns].join(', ') %>]
+    unique: <%= ix[:unique] %>
 <% end -%>
-enums:
+<% if indexes_meta.empty? -%>
+    []
+<% end -%>
+  enums:
 <% if enums_meta.present? -%>
 <% enums_meta.each do |name, map| -%>
-<%= name %>: <%= map.keys %>
+  <%= name %>: <%= map.keys %>
 <% end -%>
 <% else -%>
-{}
+    {}
 <% end -%>
 
 controllers:
-list_fields:
+  list_fields:
 <% @fields.each do |f| -%>
-- <%= f %>
+  - <%= f %>
 <% end -%>
-show_fields:
-<% (@columns.map { _1[:name] } + @uploaders).uniq.each do |f| -%>
-- <%= f %>
+<% if @fields.empty? -%>
+    []
 <% end -%>
-form_fields:
+  show_fields:
+<% (@columns.map { |c| c[:name] } + @uploaders).uniq.each do |f| -%>
+  - <%= f %>
+<% end -%>
+<% if (@columns.map { |c| c[:name] } + @uploaders).uniq.empty? -%>
+    []
+<% end -%>
+  form_fields:
+<% if @fields.empty? && @uploaders.empty? -%>
+    []
+<% else -%>
 <% @fields.each do |f| -%>
-- name: <%= f %>
-type: <%= get_column_type(f) %>
+<% if @uploaders.include?(f) -%>
+  - name: <%= f %>
+    type: <%= is_singular?(f) ? 'file' : 'files' %>
+<% else -%>
+  - name: <%= f %>
+    type: <%= get_column_type(f) %>
+<% end -%>
 <% end -%>
 <% @uploaders.each do |f| -%>
-- name: <%= f %>
-type: <%= is_singular?(f) ? 'file' : 'files' %>
+<% unless @fields.include?(f) -%>
+  - name: <%= f %>
+    type: <%= is_singular?(f) ? 'file' : 'files' %>
+<% end -%>
+<% end -%>
 <% end -%>
 
 domains:
-action_list:
-use_case:
-contract:
-<% @search_able.each do |f| -%>
-# optional search fields: <%= f %>
+  action_list:
+    use_case:
+      contract:
+<% if contract_lines_for_list.empty? -%>
+        []
+<% else -%>
+<% contract_lines_for_list.each do |line| -%>
+        - <%= line %>
 <% end -%>
-action_fetch_by_id:
-use_case:
-contract:
-- required(:id).filled(:string)
-<% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
+<% end -%>
+    repository:
+      filters:
+<% if repository_list_filters.empty? -%>
+        []
+<% else -%>
+<% repository_list_filters.each do |line| -%>
+        - <%= line %>
+<% end -%>
 <% end -%>
 
-action_create:
-use_case:
-contract:
+  action_fetch_by_id:
+    use_case:
+      contract:
+        - "required(:id).filled(:string)"
 <% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
+        - "required(:<%= @resource_owner_id %>).filled(:string)"
 <% end -%>
+<% search_able_fields = arg_settings['search_able'].to_s.split(',').map(&:strip).reject(&:blank?) -%>
+<% if search_able_fields.any? -%>
+<% search_able_fields.each do |f| -%>
+        # optional search fields: <%= f %>
+<% end -%>
+<% end -%>
+
+  action_create:
+    use_case:
+      contract:
+<% if @resource_owner_id.present? -%>
+        - "required(:<%= @resource_owner_id %>).filled(:string)"
+<% end -%>
+<% if contract_lines_for_create.empty? && !@resource_owner_id.present? -%>
+        []
+<% else -%>
 <% contract_lines_for_create.each do |line| -%>
-<%= line %>
+        - <%= line %>
+<% end -%>
 <% end -%>
 
-action_update:
-use_case:
-contract:
-- required(:id).filled(:string)
+  action_update:
+    use_case:
+      contract:
+        - "required(:id).filled(:string)"
 <% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
+        - "required(:<%= @resource_owner_id %>).filled(:string)"
 <% end -%>
 <% contract_lines_for_update.each do |line| -%>
-<%= line %>
+        - <%= line %>
 <% end -%>
 
-action_destroy:
-use_case:
-contract:
-- required(:id).filled(:string)
+  action_destroy:
+    use_case:
+      contract:
+        - "required(:id).filled(:string)"
 <% if @resource_owner_id.present? -%>
-- required(:<%= @resource_owner_id %>).filled(:string)
+        - "required(:<%= @resource_owner_id %>).filled(:string)"
 <% end -%>
 
 entity:
-skipped_fields:
-- id
-- created_at
-- updated_at
-<% if @columns.map { _1[:name] }.include?('type') -%>
-- type
+  skipped_fields:
+    - id
+    - created_at
+    - updated_at
+<% if @columns.map { |c| c[:name] }.include?('type') -%>
+    - type
+<% end -%>
+  db_attributes:
+<% if entity_db_fields.empty? -%>
+    []
+<% else -%>
+<% entity_db_fields.each do |field| -%>
+    - <%= field %>
+<% end -%>
 <% end -%>

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
     @id     = params.id
     @params = prepare! params.except(:id), sanitize: true
   end
 
   def call(builder: true)
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
     resource = <%= @model_class %>.find_by(id: @id, <%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
 <% else -%>
     resource = <%= @model_class %>.find_by(id: @id)
@@ -16,12 +16,12 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::
 <% if @uploaders.present? -%>
     # Remove the existing images if a new one is being uploaded
 <% @uploaders.each do |uplaoder| -%>
-    resource.<%=uplaoder %>.purge if @params.<%=uplaoder %>.present? && resource.<%=uplaoder %>.attached?
+    resource.<%=uplaoder.name %>.purge if @params.<%=uplaoder.name %>.present? && resource.<%=uplaoder.name %>.attached?
 <% end -%>
 <% end -%>
     unless resource.update(@params.to_h)
       return Failure build_errors(resource)
     end
-    Success Core::Builders::<%= @subject_class %>.new(resource).build
+    Success <%= domain_class_name %>::Builders::<%= @subject_class %>.new(resource).build
   end
 end

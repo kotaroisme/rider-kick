@@ -1,0 +1,19 @@
+# This file ensures the factories directory is tracked by git
+# Place your FactoryBot factory definitions here
+#
+# Example:
+# FactoryBot.define do
+#   factory :user, class: 'Models::User' do
+#     id { SecureRandom.uuid }
+#     email { Faker::Internet.email }
+#     name { Faker::Name.name }
+#     created_at { Time.current }
+#     updated_at { Time.current }
+#   end
+# end
+
+
+
+
+
+

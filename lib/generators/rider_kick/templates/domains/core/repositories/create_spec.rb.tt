@@ -1,0 +1,78 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
+  describe '#call' do
+    let(:builder) { instance_double(<%= domain_class_name %>::Builders::<%= @subject_class %>) }
+    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
+    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
+
+    let(:valid_params) do
+      Hashie::Mash.new({
+<% if @resource_owner_id.present? -%>
+        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+<% end -%>
+<% @fields.each_with_index do |field, index| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
+        <%= field %>: Time.zone.now<%= index < @fields.length - 1 ? ',' : '' %>
+<% else -%>
+        <%= field %>: '<%= field %>_value'<%= index < @fields.length - 1 ? ',' : '' %>
+<% end -%>
+<% end -%>
+      })
+    end
+
+    let(:error_messages) do
+      [
+        { 'attribute' => '<%= @fields.first %>', 'type' => 'blank', 'options' => { 'message' => 'must be valid format' } },
+        { 'attribute' => '<%= @fields[1] || @fields.first %>', 'type' => 'invalid', 'options' => { 'message' => 'must be valid format' } }
+      ]
+    end
+
+    let(:active_model_errors) do
+      errors = double('errors')
+      allow(errors).to receive(:each).and_yield(
+        double(as_json: error_messages.first)
+      ).and_yield(
+        double(as_json: error_messages.last)
+      )
+      errors
+    end
+
+    subject(:repository) { described_class.new(params: valid_params) }
+
+    before do
+      allow(<%= domain_class_name %>::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
+      allow(builder).to receive(:build).and_return(entity)
+    end
+
+    context 'when creation is successful' do
+      it 'creates a new <%= @variable_subject %> and returns success with entity', :aggregate_failures do
+        allow(<%= @model_class %>).to receive(:new).with(valid_params.to_h).and_return(<%= @variable_subject %>)
+        allow(<%= @variable_subject %>).to receive(:save).and_return(true)
+
+        result = repository.call(builder: true)
+
+        expect(result).to be_success
+        expect(result.value!).to eq(entity)
+      end
+    end
+
+    context 'when creation fails' do
+      it 'returns failure with errors', :aggregate_failures do
+        allow(<%= @model_class %>).to receive(:new).with(valid_params.to_h).and_return(<%= @variable_subject %>)
+        allow(<%= @variable_subject %>).to receive(:save).and_return(false)
+        allow(<%= @variable_subject %>).to receive(:errors).and_return(active_model_errors)
+
+        result = repository.call(builder: true)
+
+        expect(result).to be_failure
+        # Verify error structure matches build_errors output
+        expect(result.failure).to be_an(Array)
+      end
+    end
+  end
+end

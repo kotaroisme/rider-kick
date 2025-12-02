@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
     @params     = prepare! params, sanitize: true
   end
@@ -10,6 +10,6 @@ class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::
     unless resource.save
       return Failure build_errors(resource)
     end
-    Success Core::Builders::<%= @subject_class %>.new(resource).build
+    Success <%= domain_class_name %>::Builders::<%= @subject_class %>.new(resource).build
   end
 end

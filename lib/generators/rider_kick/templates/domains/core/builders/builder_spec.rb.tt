@@ -1,0 +1,219 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe <%= domain_class_name %>::Builders::<%= @subject_class %>, type: :builder do
+  describe '#build' do
+    let(:<%= @variable_subject %>) do
+      ClassStubber::Model.new(
+        'id' => 'test-id-123',
+<% 
+# Get uploader field names to exclude from entity_db_fields
+uploader_names = @uploaders.map { |u| u.name.to_s }
+-%>
+<% @entity_db_fields.each do |field| -%>
+<% next if uploader_names.include?(field.to_s) -%>
+<% column_meta = get_column_meta(field) -%>
+<% case column_meta[:type].to_s -%>
+<% when 'datetime', 'timestamp' -%>
+        '<%= field %>' => Time.current,
+<% when 'date' -%>
+        '<%= field %>' => Date.current,
+<% when 'time' -%>
+        '<%= field %>' => Time.current,
+<% when 'boolean' -%>
+        '<%= field %>' => true,
+<% when 'integer', 'bigint' -%>
+        '<%= field %>' => 123,
+<% when 'decimal', 'float' -%>
+        '<%= field %>' => 123.45,
+<% else -%>
+        '<%= field %>' => '<%= field %>_value',
+<% end -%>
+<% end -%>
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+        '<%= uploader.name %>' => ClassStubber::ActiveStorageAttachment.new_single('http://example.com/<%= uploader.name %>.jpg'),
+<% else -%>
+        '<%= uploader.name %>' => ClassStubber::ActiveStorageAttachment.new_multiple([
+          'http://example.com/<%= uploader.name %>_1.jpg',
+          'http://example.com/<%= uploader.name %>_2.jpg'
+        ]),
+<% end -%>
+<% end -%>
+        'created_at' => Time.current,
+        'updated_at' => Time.current
+      )
+    end
+
+    let(:builder) { described_class.new(<%= @variable_subject %>) }
+
+    it 'builds entity from model' do
+      entity = builder.build
+
+      expect(entity).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
+      expect(entity.id).to eq('test-id-123')
+<% @entity_db_fields.first(2).each do |field| -%>
+<% column_meta = get_column_meta(field) -%>
+<% case column_meta[:type].to_s -%>
+<% when 'datetime', 'timestamp', 'time' -%>
+      expect(entity.<%= field %>).to be_a(Time)
+<% when 'date' -%>
+      expect(entity.<%= field %>).to be_a(Date)
+<% when 'boolean' -%>
+      expect(entity.<%= field %>).to eq(true)
+<% when 'integer', 'bigint' -%>
+      expect(entity.<%= field %>).to eq(123)
+<% when 'decimal', 'float' -%>
+      expect(entity.<%= field %>).to eq(123.45)
+<% else -%>
+      expect(entity.<%= field %>).to eq('<%= field %>_value')
+<% end -%>
+<% end -%>
+    end
+
+    it 'includes all required entity attributes', :aggregate_failures do
+      entity = builder.build
+      
+      # Entity must have these attributes (keys must exist, values can be nil for optional)
+      expect(entity).to respond_to(:id)
+<% @entity_db_fields.each do |field| -%>
+<% next if uploader_names.include?(field.to_s) -%>
+      expect(entity).to respond_to(:<%= field %>)
+<% end -%>
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+      expect(entity).to respond_to(:<%= uploader.name %>_url)
+<% else -%>
+      expect(entity).to respond_to(:<%= uploader.name %>_urls)
+<% end -%>
+<% end -%>
+      expect(entity).to respond_to(:created_at)
+      expect(entity).to respond_to(:updated_at)
+    end
+<% if @uploaders.present? -%>
+
+    describe '#attributes_for_entity' do
+      it 'returns hash with uploader attributes', :aggregate_failures do
+        attributes = builder.send(:attributes_for_entity)
+        
+        expect(attributes).to be_a(Hash)
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+        expect(attributes).to have_key(:<%= uploader.name %>_url)
+<% else -%>
+        expect(attributes).to have_key(:<%= uploader.name %>_urls)
+<% end -%>
+<% end -%>
+      end
+
+      it 'generates correct URL attributes', :aggregate_failures do
+        attributes = builder.send(:attributes_for_entity)
+        
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+        expect(attributes[:<%= uploader.name %>_url]).to eq('http://example.com/<%= uploader.name %>.jpg')
+<% else -%>
+        expect(attributes[:<%= uploader.name %>_urls]).to be_an(Array)
+        expect(attributes[:<%= uploader.name %>_urls].size).to eq(2)
+<% end -%>
+<% end -%>
+      end
+    end
+<% end -%>
+
+    it 'ensures all entity attributes have correct keys and types', :aggregate_failures do
+      entity = builder.build
+      entity_hash = entity.to_h
+      
+      # All entity attributes must have keys in the hash (source of truth from entity)
+      expect(entity_hash).to have_key(:id)
+      expect(entity.id).to be_a(String)
+<% @entity_db_fields.each do |field| -%>
+<% next if uploader_names.include?(field.to_s) -%>
+<% column_meta = get_column_meta(field) -%>
+      
+      expect(entity_hash).to have_key(:<%= field %>)
+<% case column_meta[:type].to_s -%>
+<% when 'datetime', 'timestamp', 'time' -%>
+      expect(entity.<%= field %>).to be_a(Time) if entity.<%= field %>.present?
+<% when 'date' -%>
+      expect(entity.<%= field %>).to be_a(Date) if entity.<%= field %>.present?
+<% when 'boolean' -%>
+      expect([TrueClass, FalseClass, NilClass]).to include(entity.<%= field %>.class)
+<% when 'integer', 'bigint' -%>
+      expect(entity.<%= field %>).to be_a(Integer) if entity.<%= field %>.present?
+<% when 'decimal', 'float' -%>
+      expect(entity.<%= field %>).to be_a(Numeric) if entity.<%= field %>.present?
+<% else -%>
+      expect(entity.<%= field %>).to be_a(String).or be_nil
+<% end -%>
+<% end -%>
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+      
+      expect(entity_hash).to have_key(:<%= uploader.name %>_url)
+      expect(entity.<%= uploader.name %>_url).to be_a(String).or be_nil
+<% else -%>
+      
+      expect(entity_hash).to have_key(:<%= uploader.name %>_urls)
+      expect(entity.<%= uploader.name %>_urls).to be_a(Array)
+<% end -%>
+<% end -%>
+      
+      expect(entity_hash).to have_key(:created_at)
+      expect(entity.created_at).to be_a(Time) if entity.created_at.present?
+      
+      expect(entity_hash).to have_key(:updated_at)
+      expect(entity.updated_at).to be_a(Time) if entity.updated_at.present?
+    end
+
+    it 'validates entity type schema definitions', :aggregate_failures do
+      # Verify entity has correct Dry::Types definitions
+      schema = <%= domain_class_name %>::Entities::<%= @subject_class %>.schema
+      
+      # ID must be required (not optional)
+      id_key = schema.key(:id)
+      expect(id_key.required?).to be true
+      # Check if type is not nilable (Constrained means not optional)
+      expect(id_key.type.to_s).to match(/Constrained|Strict/)
+<% @entity_db_fields.each do |field| -%>
+<% next if uploader_names.include?(field.to_s) -%>
+<% column_meta = get_column_meta(field) -%>
+      
+      # <%= field %>: <%= column_meta[:null] ? 'optional' : 'required' %>
+<% if column_meta[:null] -%>
+      # Optional field - can be nil
+      <%= field %>_key = schema.key(:<%= field %>)
+      expect(<%= field %>_key.required?).to be false
+<% else -%>
+      # Required field - not nilable
+      <%= field %>_key = schema.key(:<%= field %>)
+      expect(<%= field %>_key.required?).to be true
+      expect(<%= field %>_key.type.to_s).to match(/Constrained|Strict/)
+<% end -%>
+<% end -%>
+<% @uploaders.each do |uploader| -%>
+<% if uploader.type == 'single' -%>
+      
+      # <%= uploader.name %>_url: optional (uploader can be nil)
+      <%= uploader.name %>_url_key = schema.key(:<%= uploader.name %>_url)
+      expect(<%= uploader.name %>_url_key.required?).to be false
+<% else -%>
+      
+      # <%= uploader.name %>_urls: required (but can be empty array)
+      <%= uploader.name %>_urls_key = schema.key(:<%= uploader.name %>_urls)
+      expect(<%= uploader.name %>_urls_key.required?).to be true
+<% end -%>
+<% end -%>
+      
+      # Timestamps - check their actual definition
+      created_at_key = schema.key(:created_at)
+      updated_at_key = schema.key(:updated_at)
+      
+      # Verify timestamps exist (they might be optional in some entities)
+      expect(schema.keys.map(&:name)).to include(:created_at, :updated_at)
+    end
+  end
+end
+

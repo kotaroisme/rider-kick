@@ -4,7 +4,7 @@
 require 'dry/monads/result'
 require 'dry/validation'
 require 'dry/matcher/result_matcher'
-require 'rider_kick/use_cases/contract'
+require_relative 'contract'
 
 module RiderKick
   module UseCases

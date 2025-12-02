@@ -1,23 +1,28 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class%> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
+  include Pagy::Backend
+
   def initialize(params:)
     @params = prepare! params, sanitize: true
     build_pagination_variable! @params
   end
 
   def call(builder: true)
-<% if @resource_owner_id.present? -%>
-    resources = <%= @model_class %>.where(<%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_list_contract -%>
+    resources = <%= @model_class %>.where(<%= @resource_owner_id %>: @params.<%= @resource_owner_id %>)
 <% else -%>
     resources = <%= @model_class %>
 <% end -%>
-    if @search.present? && @search_able.any?
-      resources = resources.where("<%= @search_able.map { |f| "LOWER(#{f}) LIKE :search" }.join(' OR ') %>", search: "%#{@search.to_s.downcase}%")
+<% if @search_able.present? && @search_able.any? -%>
+    if @search.present?
+      resources = resources.where("<%= (@search_able || []).map { |f| "LOWER(#{f}) LIKE :search" }.join(' OR ') %>", search: "%#{@search.to_s.downcase}%")
     end
-    return Success Hashie::Mash.new(response: [], meta: {}) unless resources.present?
+<% end -%>
+    return Success Hashie::Mash.new({response: [], meta: {}}) unless resources.present?
     pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
-    response      = results.map { |result| Core::Builders::<%= @subject_class %>.new(result).build }
-    Success Hashie::Mash.new(response: response, meta: paginate!(pagy))
+    response      = results.map { |result| <%= domain_class_name %>::Builders::<%= @subject_class %>.new(result).build }
+    Success Hashie::Mash.new({response: response, meta: paginate!(pagy)})
   end
+
 end

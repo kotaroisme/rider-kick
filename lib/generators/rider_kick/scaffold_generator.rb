@@ -1,14 +1,29 @@
+# frozen_string_literal: true
+
+require 'rails/generators'
+require 'active_support/inflector'
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/enumerable'
+require 'hashie'
 require 'yaml'
+require_relative 'base_generator'
+require_relative '../../rider-kick'
+
 module RiderKick
-  class ScaffoldGenerator < Rails::Generators::Base
+  class ScaffoldGenerator < BaseGenerator
     source_root File.expand_path('templates', __dir__)
 
     argument :arg_structure, type: :string, default: '', banner: ''
-    argument :arg_scope, type: :hash, default: '', banner: 'scope:dashboard'
+    argument :arg_scope, type: :hash, default: {}, banner: 'scope:dashboard'
+    class_option :engine, type: :string, default: nil, desc: 'Specify engine name (e.g., Core, Admin)'
+    class_option :domain, type: :string, default: '', desc: 'Specify domain scope (e.g., core/, admin/, api/v1/)'
 
     def generate_use_case
+      configure_engine
       validation!
       setup_variables
+      validate_repository_filters!   # ← validate filter fields exist (after setup_variables)
+      validate_entity_fields!        # ← validate entity db_attributes exist (after setup_variables)
 
       generate_files('create')
       generate_files('update')
@@ -18,72 +33,267 @@ module RiderKick
 
       set_uploader_in_model
       copy_builder_and_entity_files
+      generate_spec_files
     end
 
     private
 
+    def domain_class_name
+      # Convert domain scope to class name
+      # Engine: "<Engine>" for ApplicationRecord, "<Engine>::<Domain>" for other classes
+      # Main app: "" for ApplicationRecord, "<AppName>" for root domain, "<Domain>" for scoped domain
+      scope = RiderKick.configuration.domain_scope.chomp('/')
+
+      if RiderKick.configuration.engine_name.present?
+        # Engine context: domain_scope always starts with engine name
+        engine_prefix = RiderKick.configuration.engine_name.camelize
+        engine_underscored = RiderKick.configuration.engine_name.underscore
+
+        if scope == engine_underscored
+          # Default engine domain: engines/my_engine/app/domains/my_engine/
+          engine_prefix
+        else
+          # Engine with sub-domain: engines/my_engine/app/domains/my_engine/admin/
+          # Remove engine prefix from scope and create namespace
+          sub_scope = scope.sub(/^#{engine_underscored}\//, '')
+          if sub_scope.empty?
+            engine_prefix
+          else
+            "#{engine_prefix}::#{sub_scope.split('/').map(&:camelize).join('::')}"
+          end
+        end
+      elsif scope.empty?
+        # Main app context
+        # Root domain in main app: use application name
+        begin
+          Rails.application&.class&.module_parent_name || 'MyApp'
+        rescue
+          'MyApp' # Fallback for test environment
+        end
+      else
+        # Scoped domain in main app: use domain name only
+        scope.split('/').map(&:camelize).join('::')
+      end
+    end
+
     def validation!
-      unless Dir.exist?('app/domains')
-        say 'Error must create clean arch structure first!'
-        raise Thor::Error, 'run: bin/rails generate rider_kick:clean_arch --setup'
+      validate_domains_path!
+    end
+
+    def validate_repository_filters!
+      return if @repository_list_filters.empty?
+
+      @repository_list_filters.each do |filter_hash|
+        # Filter hash format: "{ field: 'name', type: 'search' }"
+        # Kita perlu extract field name dari string ini
+        match = filter_hash.match(/field: '([^']+)'/)
+        next unless match
+
+        field_name = match[1]
+
+        unless @model_class.column_names.include?(field_name)
+          raise ValidationError.new(
+                  "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
+                  structure_file:    "#{arg_structure}_structure.yaml",
+                  field_name:        field_name,
+                  model_class:       @model_class.to_s,
+                  available_columns: @model_class.column_names
+          )
+        end
+      end
+    end
+
+    def validate_entity_fields!
+      return if @entity_db_fields.empty?
+
+      missing_fields = @entity_db_fields - @model_class.column_names
+
+      if missing_fields.any?
+        raise ValidationError.new(
+                "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
+                structure_file:    "#{arg_structure}_structure.yaml",
+                missing_fields:    missing_fields,
+                model_class:       @model_class.to_s,
+                available_columns: @model_class.column_names,
+                suggestion:        "Update section 'entity.db_attributes' di YAML file"
+        )
       end
     end
 
     def setup_variables
-      config     = YAML.load_file("db/structures/#{arg_structure}_structure.yaml")
-      @structure = Hashie::Mash.new(config)
+      setup_structure_config
+      setup_model_variables
+      setup_contract_variables
+      setup_entity_variables
+      setup_repository_variables
+    end
 
-      # Mengambil detail konfigurasi
-      model_name    = @structure.model
+    def setup_structure_config
+      # Determine structure file path based on engine configuration
+      structure_path = if RiderKick.configuration.engine_name.present?
+        # For engines, read structure file from engine's db/structures directory
+        engine_name = RiderKick.configuration.engine_name.downcase
+        "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
+      else
+        # For main app, read from host's db/structures directory
+        "db/structures/#{arg_structure}_structure.yaml"
+      end
+
+      validate_yaml_format!(structure_path)
+      config     = YAML.load_file(structure_path)
+      @structure = Hashie::Mash.new(config)
+    end
+
+    def setup_model_variables
+      model_name = @structure.model
+      validate_model_exists!(model_name.camelize)
+      @model_class = model_name.camelize.constantize
+
+      @variable_subject = model_name.split('::').last.underscore.downcase
+      @subject_class    = @variable_subject.camelize
+      @fields           = contract_fields
+
+      # Column metadata
+      @columns_meta      = columns_meta
+      @columns_meta_hash = @columns_meta.index_by { |c| c[:name] }
+
+      # Type mappings
+      @type_mapping        = RiderKick.configuration.type_mapping
+      @entity_type_mapping = RiderKick.configuration.entity_type_mapping
+    end
+
+    def setup_contract_variables
+      @services = @structure.domains || {}
+
+      # Membaca kontrak dinamis (dari Peningkatan #1)
+      # Pastikan selalu return array, bahkan jika nil
+      @contract_list        = Array(@services.action_list&.use_case&.contract).compact
+      @contract_fetch_by_id = Array(@services.action_fetch_by_id&.use_case&.contract).compact
+      @contract_create      = Array(@services.action_create&.use_case&.contract).compact
+      @contract_update      = Array(@services.action_update&.use_case&.contract).compact
+      @contract_destroy     = Array(@services.action_destroy&.use_case&.contract).compact
+    end
+
+    def setup_entity_variables
       resource_name = @structure.resource_name.singularize.underscore.downcase
       entity        = @structure.entity || {}
 
-      @actor                = @structure.actor
-      @resource_owner_id    = @structure.resource_owner_id
-      @uploaders            = @structure.uploaders || []
-      @search_able          = @structure.search_able || []
-      @services             = @structure.domains || {}
-      @contract_list        = @services.action_list.use_case.contract || []
-      @contract_fetch_by_id = @services.action_fetch_by_id.use_case.contract || []
-      @contract_create      = @services.action_create.use_case.contract || []
-      @contract_update      = @services.action_update.use_case.contract || []
-      @contract_destroy     = @services.action_destroy.use_case.contract || []
-      @skipped_fields       = entity.skipped_fields || []
-      @custom_fields        = entity.custom_fields || []
-
-      @variable_subject = model_name.split('::').last.underscore.downcase
       @scope_path       = resource_name.pluralize.underscore.downcase
       @scope_class      = @scope_path.camelize
       @scope_subject    = @scope_path.singularize
-      @model_class      = model_name.camelize.constantize
-      @subject_class    = @variable_subject.camelize
-      @fields           = contract_fields
-      @route_scope_path = arg_scope['scope'].to_s.downcase rescue ''
-      @route_scope_class = @route_scope_path.camelize rescue ''
 
-      @type_mapping        = {
-        'uuid'     => ':string',
-        'string'   => ':string',
-        'text'     => ':string',
-        'integer'  => ':integer',
-        'boolean'  => ':bool',
-        'float'    => ':float',
-        'decimal'  => ':float',
-        'date'     => ':date',
-        'upload'   => 'Types::File',
-        'datetime' => ':string'
-      }
-      @entity_type_mapping = {
-        'uuid'     => 'Types::Strict::String',
-        'string'   => 'Types::Strict::String',
-        'text'     => 'Types::Strict::String',
-        'integer'  => 'Types::Strict::Integer',
-        'boolean'  => 'Types::Strict::Bool',
-        'float'    => 'Types::Strict::Float',
-        'decimal'  => 'Types::Strict::Decimal',
-        'date'     => 'Types::Strict::Date',
-        'datetime' => 'Types::Strict::Time'
-      }
+      # Membaca definisi uploader baru (array of hashes)
+      @uploaders = (@structure.uploaders || []).map { |up| Hashie::Mash.new(up) }
+
+      # Membaca atribut DB eksplisit (array string)
+      @entity_db_fields = entity.respond_to?(:db_attributes) ? entity.db_attributes || [] : []
+    end
+
+    def setup_repository_variables
+      @actor                = @structure.actor
+      @resource_owner_id    = @structure.resource_owner_id
+      @resource_owner       = @structure.resource_owner
+      @search_able = @structure.search_able
+
+      # Membaca DSL filter repositori baru (Peningkatan #2)
+      @repository_list_filters = @services.action_list&.repository&.filters || []
+
+      # Route scope
+      @route_scope_path  = arg_scope.fetch('scope', '').to_s.downcase
+      @route_scope_class = @route_scope_path.camelize
+
+      # Baca actor_id dari structure.yaml jika ada, jika tidak generate dari actor
+      @actor_id = if @structure.actor_id.present?
+        @structure.actor_id.to_s
+      elsif @actor.present?
+        "#{@actor.to_s.downcase}_id"
+      end
+
+      # Set flag untuk setiap action apakah resource_owner_id atau actor_id ada di contract
+      # Ini digunakan di template repository untuk conditional logic
+      @has_resource_owner_id_in_list_contract = field_exists_in_contract?(@resource_owner_id, 'list')
+      @has_resource_owner_id_in_fetch_by_id_contract = field_exists_in_contract?(@resource_owner_id, 'fetch_by_id')
+      @has_resource_owner_id_in_create_contract = field_exists_in_contract?(@resource_owner_id, 'create')
+      @has_resource_owner_id_in_update_contract = field_exists_in_contract?(@resource_owner_id, 'update')
+      @has_resource_owner_id_in_destroy_contract = field_exists_in_contract?(@resource_owner_id, 'destroy')
+
+      @has_actor_id_in_list_contract = field_exists_in_contract?(@actor_id, 'list')
+      @has_actor_id_in_fetch_by_id_contract = field_exists_in_contract?(@actor_id, 'fetch_by_id')
+      @has_actor_id_in_create_contract = field_exists_in_contract?(@actor_id, 'create')
+      @has_actor_id_in_update_contract = field_exists_in_contract?(@actor_id, 'update')
+      @has_actor_id_in_destroy_contract = field_exists_in_contract?(@actor_id, 'destroy')
+    end
+
+    # Check apakah field (actor_id atau resource_owner_id) ada di contract untuk action tertentu
+    def field_exists_in_contract?(field_name, action)
+      return false if field_name.blank?
+
+      # Get contract untuk action tertentu
+      contract = case action.to_s
+      when 'list'
+        @contract_list
+      when 'fetch', 'fetch_by_id'
+        @contract_fetch_by_id
+      when 'create'
+        @contract_create
+      when 'update'
+        @contract_update
+      when 'destroy'
+        @contract_destroy
+      else
+        []
+      end
+      contract ||= []
+      # Check apakah contract string mengandung field name
+      # Pattern: "required(:field_name)" atau "optional(:field_name)"
+      # Contoh: "required(:account_id).filled(:string)" -> match untuk "account_id"
+      # Pattern lebih robust: cari :field_name atau (:field_name) di dalam string
+      return false if contract.empty?
+
+      contract.any? do |contract_line|
+        contract_str = contract_line.to_s.strip
+        # Match pattern: required(:field_name) atau optional(:field_name) atau :field_name
+        # Pattern: cari :field_name atau (:field_name) di dalam string
+        # Escaped field_name untuk handle special characters
+        escaped_field = Regexp.escape(field_name.to_s)
+        contract_str.match?(/[:\(]#{escaped_field}[\):]/)
+      end
+    end
+
+    # Helper method untuk template: check apakah resource_owner_id ada di contract untuk action tertentu
+    def has_resource_owner_id_in_contract?(action)
+      case action.to_s
+      when 'list'
+        @has_resource_owner_id_in_list_contract
+      when 'fetch', 'fetch_by_id'
+        @has_resource_owner_id_in_fetch_by_id_contract
+      when 'create'
+        @has_resource_owner_id_in_create_contract
+      when 'update'
+        @has_resource_owner_id_in_update_contract
+      when 'destroy'
+        @has_resource_owner_id_in_destroy_contract
+      else
+        false
+      end
+    end
+
+    # Helper method untuk template: check apakah actor_id ada di contract untuk action tertentu
+    def has_actor_id_in_contract?(action)
+      case action.to_s
+      when 'list'
+        @has_actor_id_in_list_contract
+      when 'fetch', 'fetch_by_id'
+        @has_actor_id_in_fetch_by_id_contract
+      when 'create'
+        @has_actor_id_in_create_contract
+      when 'update'
+        @has_actor_id_in_update_contract
+      when 'destroy'
+        @has_actor_id_in_destroy_contract
+      else
+        false
+      end
     end
 
     def is_singular?(str)
@@ -92,11 +302,49 @@ module RiderKick
 
     def set_uploader_in_model
       @uploaders.each do |uploader|
-        method_strategy = 'has_many_attached'
-        if is_singular?(uploader)
-          method_strategy = 'has_one_attached'
+        method_strategy = uploader.type == 'single' ? 'has_one_attached' : 'has_many_attached'
+        uploader_name = uploader.name
+        model_path = model_file_path(@model_class, @variable_subject)
+
+        unless File.exist?(model_path)
+          say "Skip attaching #{uploader_name}: model file not found: #{model_path}", :yellow
+          next
         end
-        inject_into_file File.join("#{root_path_app}/models", @model_class.to_s.split('::').first.downcase.to_s, "#{@variable_subject}.rb"), "  #{method_strategy} :#{uploader}, dependent: :purge\n", after: "class #{@model_class} < ApplicationRecord\n"
+
+        content = File.read(model_path)
+
+        # More robust check: look for has_one_attached/has_many_attached with the uploader name
+        # Pattern matches: has_one_attached :name or has_one_attached :name, dependent: ...
+        attachment_pattern = /#{Regexp.escape(method_strategy)}\s+:#{Regexp.escape(uploader_name)}\b/
+
+        if content.match?(attachment_pattern)
+          say "Skip attaching #{uploader_name}: already present in #{model_path}", :blue
+          next
+        end
+
+        line_to_insert = "  #{method_strategy} :#{uploader_name}, dependent: :purge\n"
+        class_anchor_regex = /class #{Regexp.escape(@model_class.to_s)} < ApplicationRecord[^\n]*\n/
+
+        inject_into_file model_path, line_to_insert, after: class_anchor_regex
+      end
+    end
+
+    def model_file_path(model_class, variable_subject)
+      # Extract namespace dari model class
+      # Models::User -> namespace setelah Models adalah []
+      # Models::EngineName::User -> namespace setelah Models adalah [EngineName]
+      full_namespace = model_class.to_s.deconstantize
+      namespace_parts = full_namespace.split('::').reject(&:empty?)
+
+      # Jika model_class mengandung Models::EngineName::User, maka path ke engine
+      # Jika model_class Models::User, maka path ke main app
+      if namespace_parts.length > 1 && namespace_parts.first == 'Models'
+        # Engine: Models::EngineName::User -> app/models/<engine_name>/<model>.rb
+        engine_name_part = namespace_parts[1].underscore
+        File.join('app/models', engine_name_part, "#{variable_subject}.rb")
+      else
+        # Main app: Models::User -> app/models/models/<model>.rb
+        File.join(RiderKick.configuration.models_path, "#{variable_subject}.rb")
       end
     end
 
@@ -107,22 +355,50 @@ module RiderKick
       @use_case_class   = use_case_filename.camelize
       @repository_class = repository_filename.camelize
 
-      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/use_cases/", @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
-      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join("#{root_path_app}/domains/core/repositories/#{@scope_path}", "#{repository_filename}.rb")
+      # Generate code files
+      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
+      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
+
+      # Generate spec files
+      generate_use_case_spec(action, suffix, use_case_filename)
+      generate_repository_spec(action, suffix, repository_filename)
     end
 
     def copy_builder_and_entity_files
-      template 'domains/core/builders/builder.rb.tt', File.join("#{root_path_app}/domains/core/builders", "#{@variable_subject}.rb")
-      template 'domains/core/entities/entity.rb.tt', File.join("#{root_path_app}/domains/core/entities", "#{@variable_subject}.rb")
+      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}.rb")
+      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, 'entities', "#{@variable_subject}.rb")
     end
 
     def contract_fields
-      skip_contract_fields = @skipped_fields.map(&:strip).uniq
-      @model_class.columns.reject { |column| skip_contract_fields.include?(column.name.to_s) }.map(&:name).map(&:to_s)
+      @model_class.columns.reject { |c| ['id', 'created_at', 'updated_at', 'type'].include?(c.name.to_s) }
+        .map { |c| c.name.to_s }
     end
 
+    # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
+    # Menambahkan helper-helper ini dari structure_generator
+    def columns_meta
+      @model_class.columns.map do |c|
+        {
+          name:      c.name.to_s,
+          type:      c.type,
+          sql_type:  (c.respond_to?(:sql_type) ? c.sql_type : nil),
+          null:      (c.respond_to?(:null) ? c.null : nil),
+          default:   (c.respond_to?(:default) ? c.default : nil),
+          precision: (c.respond_to?(:precision) ? c.precision : nil),
+          scale:     (c.respond_to?(:scale) ? c.scale : nil),
+          limit:     (c.respond_to?(:limit) ? c.limit : nil)
+        }
+      end
+    end
+
+    def get_column_meta(field)
+      @columns_meta_hash[field.to_s] || {}
+    end
+    # --- AKHIR BLOK MODIFIKASI ---
+
     def get_column_type(field)
-      @uploaders.include?(field) ? 'upload' : @model_class.columns_hash[field.to_s].type
+      is_uploader = @uploaders.any? { |up| up.name == field.to_s }
+      is_uploader ? 'upload' : @model_class.columns_hash[field.to_s].type
     end
 
     def root_path_app
@@ -135,6 +411,45 @@ module RiderKick
 
     def build_repository_filename(action, suffix = '')
       "#{action}_#{@variable_subject}#{suffix}"
+    end
+
+    def generate_use_case_spec(action, suffix, use_case_filename)
+      template_name = "domains/core/use_cases/#{action + suffix}_spec.rb.tt"
+      spec_path = File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
+
+      if File.exist?(File.join(self.class.source_root, template_name))
+        template template_name, spec_path
+      else
+        say "Warning: Spec template not found: #{template_name}", :yellow
+      end
+    end
+
+    def generate_repository_spec(action, suffix, repository_filename)
+      template_name = "domains/core/repositories/#{action + suffix}_spec.rb.tt"
+      spec_path = File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}_spec.rb")
+
+      if File.exist?(File.join(self.class.source_root, template_name))
+        template template_name, spec_path
+      else
+        say "Warning: Spec template not found: #{template_name}", :yellow
+      end
+    end
+
+    def generate_spec_files
+      # Generate builder spec (covers entity validation too)
+      builder_spec_path = File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}_spec.rb")
+      template 'domains/core/builders/builder_spec.rb.tt', builder_spec_path
+
+      # Generate model spec
+      generate_model_spec
+    end
+
+    def generate_model_spec
+      model_spec_path = model_file_path(@model_class, @variable_subject).gsub('.rb', '_spec.rb')
+      # Place spec alongside the model file (same directory)
+      # model_spec_path sudah berisi path lengkap ke app/models/.../_spec.rb
+
+      template 'models/model_spec.rb.tt', model_spec_path
     end
   end
 end

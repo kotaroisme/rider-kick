@@ -1,14 +1,10 @@
 # frozen_string_literal: true
 
-class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %> < RiderKick::UseCases::AbstractUseCase
+class <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %> < RiderKick::UseCases::AbstractUseCase
   contract do
-    params(Core::UseCases::Contract::Default.new.call, Core::UseCases::Contract::Pagination.new.call) do
+    params(<%= domain_class_name %>::UseCases::Contract::Default.new.call, <%= domain_class_name %>::UseCases::Contract::Pagination.new.call) do
 <% @contract_list.each do |field| -%>
-<% next if field.include?("#{@resource_owner_id}") && @resource_owner_id.present? -%>
       <%= field %>
-<% end -%>
-<% if @resource_owner_id.present? -%>
-      required(:<%= @resource_owner_id %>).filled(:string)
 <% end -%>
     end
   end
@@ -17,6 +13,6 @@ class Core::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].re
 
   def result
     params = yield build_parameter!
-    Core::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(params: params).call(builder: true)
+    <%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>.new(params: params).call(builder: true)
   end
 end

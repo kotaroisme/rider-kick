@@ -1,25 +1,51 @@
 # frozen_string_literal: true
 
-class Core::Builders::<%=  @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
-  acts_as_builder_for_entity Core::Entities::<%= @subject_class%>
+class <%= domain_class_name %>::Builders::<%= @subject_class %> < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity <%= domain_class_name %>::Entities::<%= @subject_class%>
 
 <% if @uploaders.present? -%>
   def attributes_for_entity
     {
-<% @uploaders.each_with_index do |field, index| -%>
-<% if is_singular?(field) -%>
-      <%= field %>: (Rails.application.routes.url_helpers.polymorphic_url(params.<%= field %>) rescue '')<%= ',' if index < @uploaders.size - 1 %>
+<% @uploaders.each_with_index do |uploader, index| -%>
+<% if uploader.type == 'single' -%>
+      <%= uploader.name %>_url: with_<%= uploader.name %>_url(@params)<%= index < @uploaders.length - 1 ? ',' : '' %>
 <% else -%>
-      <%= field %>: build_assets(params.<%= field %>)<%= ',' if index < @uploaders.size - 1 %>
+      <%= uploader.name %>_urls: with_<%= uploader.name %>_urls(@params)<%= index < @uploaders.length - 1 ? ',' : '' %>
 <% end -%>
 <% end -%>
     }
   end
 
-private
-
-  def build_assets(assets)
-    assets.to_a.map { |asset| Rails.application.routes.url_helpers.polymorphic_url(asset) rescue '' }.compact
-  end
+  private
 <% end -%>
+  <%- @uploaders.each do |uploader| -%>
+  <%- if uploader.type == 'single' -%>
+  # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_url'
+  def with_<%= uploader.name %>_url(model)
+    return nil unless model.<%= uploader.name %>.attached?
+
+    # Anda bisa mengubah logika ini, misal menggunakan Rails.application.routes.url_helpers
+    # jika Anda membutuhkan URL yang absolut.
+    model.<%= uploader.name %>.url
+  rescue StandardError
+    nil
+  end
+
+  <%- else -%>
+  # Metode ini akan dipanggil untuk mengisi ':<%= uploader.name %>_urls'
+  def with_<%= uploader.name %>_urls(model)
+    return [] unless model.<%= uploader.name %>.attached?
+
+    model.<%= uploader.name %>.map do |attachment|
+      # Anda bisa mengubah logika ini juga
+      attachment.url
+    rescue StandardError
+      nil
+    end.compact
+  end
+
+  <%- end -%>
+  <%- end -%>
+
 end
+

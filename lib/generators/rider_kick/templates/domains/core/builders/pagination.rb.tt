@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class Core::Builders::Pagination < RiderKick::Builders::AbstractActiveRecordEntityBuilder
-  acts_as_builder_for_entity Core::Entities::Pagination
+class <%= domain_class_name %>::Builders::Pagination < RiderKick::Builders::AbstractActiveRecordEntityBuilder
+  acts_as_builder_for_entity <%= domain_class_name %>::Entities::Pagination
 
   def attributes_for_entity
     {

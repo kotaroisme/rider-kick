@@ -78,10 +78,12 @@ RSpec.configure do |config|
   # config.filter_gems_from_backtrace("gem name")
 
   config.include FactoryBot::Syntax::Methods
+  config.include FakerHelpers
   config.include Dry::Monads[:result]
   config.after :suite do
     FileUtils.rm_rf(Dir[Rails.root.join('public', 'uploads')])
   end
   config.include FileStubber
+  config.include ClassStubber
   config.include RepositoryStubber
 end

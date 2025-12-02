@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-class Core::Repositories::<%= @scope_class %>::<%= @repository_class %> < Core::Repositories::AbstractRepository
+class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
     @params = params
     @id     = @params.id
   end
 
   def call(builder: true)
-<% if @resource_owner_id.present? -%>
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_destroy_contract -%>
     resource = <%= @model_class %>.find_by(id: @id, <%=@resource_owner_id%>: @params.<%=@resource_owner_id%>)
 <% else -%>
     resource = <%= @model_class %>.find_by(id: @id)

@@ -2,11 +2,6 @@
 
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in rider_kick.gemspec
+# Specify your gem's dependencies in rider-kick.gemspec
+# Semua dependencies (termasuk development) sudah didefinisikan di gemspec
 gemspec
-
-group :development, :test do
-  gem 'byebug'
-  gem 'rubocop-performance'
-  gem 'rubocop-rails-omakase', require: false
-end

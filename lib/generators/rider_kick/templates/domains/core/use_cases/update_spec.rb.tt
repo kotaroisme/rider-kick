@@ -1,0 +1,73 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>, type: :use_case do
+  describe '#call' do
+    let(:repository) { instance_double(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
+    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
+    let(:<%= @variable_subject %>_id) { 'test-id-123' }
+    
+    let(:valid_params) do
+      {
+        id: <%= @variable_subject %>_id,
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
+        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+<% end -%>
+<% @fields.first(2).each_with_index do |field, index| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
+        <%= field %>: Time.zone.now<%= index < @fields.first(2).length - 1 ? ',' : '' %>
+<% else -%>
+        <%= field %>: 'updated_<%= field %>_value'<%= index < @fields.first(2).length - 1 ? ',' : '' %>
+<% end -%>
+<% end -%>
+      }
+    end
+
+    before do
+      allow(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>)
+        .to receive(:new)
+        .with(params: anything)
+        .and_return(repository)
+    end
+
+    context 'when parameters are valid' do
+      it 'updates the <%= @variable_subject %> successfully', :aggregate_failures do
+        allow(repository).to receive(:call).with(builder: true).and_return(Dry::Monads::Success(entity))
+
+        contract = described_class.contract!(valid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_success
+        expect(result.value!).to eq(entity)
+      end
+    end
+
+    context 'when parameters are invalid' do
+      it 'returns failure when id is missing' do
+        invalid_params = valid_params.except(:id)
+
+        contract = described_class.contract!(invalid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_failure
+      end
+    end
+
+    context 'when repository fails' do
+      it 'returns failure', :aggregate_failures do
+        error = instance_double(<%= domain_class_name %>::Entities::Error)
+        allow(repository).to receive(:call).with(builder: true).and_return(Dry::Monads::Failure(error))
+
+        contract = described_class.contract!(valid_params)
+        result = described_class.new(contract).result
+
+        expect(result).to be_failure
+        expect(result.failure).to eq(error)
+      end
+    end
+  end
+end
+

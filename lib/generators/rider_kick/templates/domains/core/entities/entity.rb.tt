@@ -1,17 +1,35 @@
 # frozen_string_literal: true
 
-class Core::Entities::<%=  @subject_class %> < Dry::Struct
-<% (['id'] + @fields + @uploaders + ['created_at', 'updated_at']).each do |field| -%>
-<% column_type = get_column_type(field) -%>
-<% dry_type = @entity_type_mapping[column_type.to_s] || 'Types::Strict::String' -%>
-<% if @uploaders.include?(field) -%>
-<% if is_singular?(field) -%>
-  attribute :<%= field %>, Types::Strict::String
-<% else -%>
-  attribute :<%= field %>, Types::Strict::Array
-<% end -%>
-<% else -%>
-  attribute :<%= field %>, <%= dry_type %>
-<% end -%>
-<% end -%>
+class <%= domain_class_name %>::Entities::<%= @subject_class %> < Dry::Struct
+  transform_keys(&:to_sym)
+
+  # Atribut Wajib (selalu ada)
+  attribute :id, Types::Strict::String
+  <%- @entity_db_fields.reject { |f| f == 'id' }.each do |field| -%>
+  <%-
+    # Dapatkan tipe data dari pemetaan
+    db_type = get_column_type(field).to_s
+    entity_type = @entity_type_mapping[db_type] || 'Types::Strict::String' # Fallback
+    # Cek nullability dari @columns_meta_hash, BUKAN @model_class.columns_hash
+    column_meta = get_column_meta(field) # Menggunakan helper baru
+    is_nullable = column_meta[:null] == true
+
+    # Terapkan .optional jika nullable di DB
+    entity_type += ".optional" if is_nullable
+  -%>
+  attribute :<%= field %>, <%= entity_type %>
+  <%- end -%>
+
+  # Atribut ini diambil dari 'uploaders' di YAML
+  <%- @uploaders.each do |uploader| -%>
+  <%- if uploader.type == 'single' -%>
+  attribute :<%= uploader.name %>_url, Types::Strict::String.optional
+  <%- else -%>
+  attribute :<%= uploader.name %>_urls, Types::Strict::Array.of(Types::Strict::String).optional
+  <%- end -%>
+  <%- end -%>
+
+  # Atribut Opsional (selalu ada)
+  attribute? :created_at, Types::Strict::Time.optional
+  attribute? :updated_at, Types::Strict::Time.optional
 end

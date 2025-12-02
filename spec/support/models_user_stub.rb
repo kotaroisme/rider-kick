@@ -20,4 +20,8 @@ class Models::User
   def self.columns_hash
     columns.to_h { |c| [c.name.to_s, Struct.new(:type).new(c.type)] }
   end
+
+  def self.column_names
+    columns.map { |c| c.name.to_s }
+  end
 end
