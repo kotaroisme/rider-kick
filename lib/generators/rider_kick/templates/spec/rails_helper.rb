@@ -86,4 +86,5 @@ RSpec.configure do |config|
   config.include FileStubber
   config.include ClassStubber
   config.include RepositoryStubber
+  config.include RepositoryStubber
 end

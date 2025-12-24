@@ -22,8 +22,8 @@ module RiderKick
       configure_engine
       validation!
       setup_variables
-      validate_repository_filters!   # ← validate filter fields exist (after setup_variables)
-      validate_entity_fields!        # ← validate entity db_attributes exist (after setup_variables)
+      validate_repository_filters! # ← validate filter fields exist (after setup_variables)
+      validate_entity_fields! # ← validate entity db_attributes exist (after setup_variables)
 
       generate_files('create')
       generate_files('update')
@@ -46,7 +46,7 @@ module RiderKick
 
       if RiderKick.configuration.engine_name.present?
         # Engine context: domain_scope always starts with engine name
-        engine_prefix = RiderKick.configuration.engine_name.camelize
+        engine_prefix      = RiderKick.configuration.engine_name.camelize
         engine_underscored = RiderKick.configuration.engine_name.underscore
 
         if scope == engine_underscored
@@ -93,11 +93,11 @@ module RiderKick
 
         unless @model_class.column_names.include?(field_name)
           raise ValidationError.new(
-                  "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
-                  structure_file:    "#{arg_structure}_structure.yaml",
-                  field_name:        field_name,
-                  model_class:       @model_class.to_s,
-                  available_columns: @model_class.column_names
+            "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
+            structure_file:    "#{arg_structure}_structure.yaml",
+            field_name:        field_name,
+            model_class:       @model_class.to_s,
+            available_columns: @model_class.column_names
           )
         end
       end
@@ -110,12 +110,12 @@ module RiderKick
 
       if missing_fields.any?
         raise ValidationError.new(
-                "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
-                structure_file:    "#{arg_structure}_structure.yaml",
-                missing_fields:    missing_fields,
-                model_class:       @model_class.to_s,
-                available_columns: @model_class.column_names,
-                suggestion:        "Update section 'entity.db_attributes' di YAML file"
+          "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
+          structure_file:    "#{arg_structure}_structure.yaml",
+          missing_fields:    missing_fields,
+          model_class:       @model_class.to_s,
+          available_columns: @model_class.column_names,
+          suggestion:        "Update section 'entity.db_attributes' di YAML file"
         )
       end
     end
@@ -131,13 +131,13 @@ module RiderKick
     def setup_structure_config
       # Determine structure file path based on engine configuration
       structure_path = if RiderKick.configuration.engine_name.present?
-        # For engines, read structure file from engine's db/structures directory
-        engine_name = RiderKick.configuration.engine_name.downcase
-        "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
-      else
-        # For main app, read from host's db/structures directory
-        "db/structures/#{arg_structure}_structure.yaml"
-      end
+                         # For engines, read structure file from engine's db/structures directory
+                         engine_name = RiderKick.configuration.engine_name.downcase
+                         "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
+                       else
+                         # For main app, read from host's db/structures directory
+                         "db/structures/#{arg_structure}_structure.yaml"
+                       end
 
       validate_yaml_format!(structure_path)
       config     = YAML.load_file(structure_path)
@@ -178,9 +178,9 @@ module RiderKick
       resource_name = @structure.resource_name.singularize.underscore.downcase
       entity        = @structure.entity || {}
 
-      @scope_path       = resource_name.pluralize.underscore.downcase
-      @scope_class      = @scope_path.camelize
-      @scope_subject    = @scope_path.singularize
+      @scope_path    = resource_name.pluralize.underscore.downcase
+      @scope_class   = @scope_path.camelize
+      @scope_subject = @scope_path.singularize
 
       # Membaca definisi uploader baru (array of hashes)
       @uploaders = (@structure.uploaders || []).map { |up| Hashie::Mash.new(up) }
@@ -190,38 +190,39 @@ module RiderKick
     end
 
     def setup_repository_variables
-      @actor                = @structure.actor
-      @resource_owner_id    = @structure.resource_owner_id
-      @resource_owner       = @structure.resource_owner
-      @search_able = @structure.search_able
+      @actor             = @structure.actor
+      @resource_owner_id = @structure.resource_owner_id
+      @resource_owner    = @structure.resource_owner
+      @search_able       = @structure.search_able
 
       # Membaca DSL filter repositori baru (Peningkatan #2)
       @repository_list_filters = @services.action_list&.repository&.filters || []
 
       # Route scope
-      @route_scope_path  = arg_scope.fetch('scope', '').to_s.downcase
+      #  @route_scope_path  = arg_scope.fetch('scope', '').to_s.downcase
+      @route_scope_path  = @structure.domain.to_s.downcase
       @route_scope_class = @route_scope_path.camelize
 
       # Baca actor_id dari structure.yaml jika ada, jika tidak generate dari actor
       @actor_id = if @structure.actor_id.present?
-        @structure.actor_id.to_s
-      elsif @actor.present?
-        "#{@actor.to_s.downcase}_id"
-      end
+                    @structure.actor_id.to_s
+                  elsif @actor.present?
+                    "#{@actor.to_s.downcase}_id"
+                  end
 
       # Set flag untuk setiap action apakah resource_owner_id atau actor_id ada di contract
       # Ini digunakan di template repository untuk conditional logic
-      @has_resource_owner_id_in_list_contract = field_exists_in_contract?(@resource_owner_id, 'list')
+      @has_resource_owner_id_in_list_contract        = field_exists_in_contract?(@resource_owner_id, 'list')
       @has_resource_owner_id_in_fetch_by_id_contract = field_exists_in_contract?(@resource_owner_id, 'fetch_by_id')
-      @has_resource_owner_id_in_create_contract = field_exists_in_contract?(@resource_owner_id, 'create')
-      @has_resource_owner_id_in_update_contract = field_exists_in_contract?(@resource_owner_id, 'update')
-      @has_resource_owner_id_in_destroy_contract = field_exists_in_contract?(@resource_owner_id, 'destroy')
+      @has_resource_owner_id_in_create_contract      = field_exists_in_contract?(@resource_owner_id, 'create')
+      @has_resource_owner_id_in_update_contract      = field_exists_in_contract?(@resource_owner_id, 'update')
+      @has_resource_owner_id_in_destroy_contract     = field_exists_in_contract?(@resource_owner_id, 'destroy')
 
-      @has_actor_id_in_list_contract = field_exists_in_contract?(@actor_id, 'list')
+      @has_actor_id_in_list_contract        = field_exists_in_contract?(@actor_id, 'list')
       @has_actor_id_in_fetch_by_id_contract = field_exists_in_contract?(@actor_id, 'fetch_by_id')
-      @has_actor_id_in_create_contract = field_exists_in_contract?(@actor_id, 'create')
-      @has_actor_id_in_update_contract = field_exists_in_contract?(@actor_id, 'update')
-      @has_actor_id_in_destroy_contract = field_exists_in_contract?(@actor_id, 'destroy')
+      @has_actor_id_in_create_contract      = field_exists_in_contract?(@actor_id, 'create')
+      @has_actor_id_in_update_contract      = field_exists_in_contract?(@actor_id, 'update')
+      @has_actor_id_in_destroy_contract     = field_exists_in_contract?(@actor_id, 'destroy')
     end
 
     # Check apakah field (actor_id atau resource_owner_id) ada di contract untuk action tertentu
@@ -230,19 +231,19 @@ module RiderKick
 
       # Get contract untuk action tertentu
       contract = case action.to_s
-      when 'list'
-        @contract_list
-      when 'fetch', 'fetch_by_id'
-        @contract_fetch_by_id
-      when 'create'
-        @contract_create
-      when 'update'
-        @contract_update
-      when 'destroy'
-        @contract_destroy
-      else
-        []
-      end
+                 when 'list'
+                   @contract_list
+                 when 'fetch', 'fetch_by_id'
+                   @contract_fetch_by_id
+                 when 'create'
+                   @contract_create
+                 when 'update'
+                   @contract_update
+                 when 'destroy'
+                   @contract_destroy
+                 else
+                   []
+                 end
       contract ||= []
       # Check apakah contract string mengandung field name
       # Pattern: "required(:field_name)" atau "optional(:field_name)"
@@ -303,8 +304,8 @@ module RiderKick
     def set_uploader_in_model
       @uploaders.each do |uploader|
         method_strategy = uploader.type == 'single' ? 'has_one_attached' : 'has_many_attached'
-        uploader_name = uploader.name
-        model_path = model_file_path(@model_class, @variable_subject)
+        uploader_name   = uploader.name
+        model_path      = model_file_path(@model_class, @variable_subject)
 
         unless File.exist?(model_path)
           say "Skip attaching #{uploader_name}: model file not found: #{model_path}", :yellow
@@ -322,7 +323,7 @@ module RiderKick
           next
         end
 
-        line_to_insert = "  #{method_strategy} :#{uploader_name}, dependent: :purge\n"
+        line_to_insert     = "  #{method_strategy} :#{uploader_name}, dependent: :purge\n"
         class_anchor_regex = /class #{Regexp.escape(@model_class.to_s)} < ApplicationRecord[^\n]*\n/
 
         inject_into_file model_path, line_to_insert, after: class_anchor_regex
@@ -333,7 +334,7 @@ module RiderKick
       # Extract namespace dari model class
       # Models::User -> namespace setelah Models adalah []
       # Models::EngineName::User -> namespace setelah Models adalah [EngineName]
-      full_namespace = model_class.to_s.deconstantize
+      full_namespace  = model_class.to_s.deconstantize
       namespace_parts = full_namespace.split('::').reject(&:empty?)
 
       # Jika model_class mengandung Models::EngineName::User, maka path ke engine
@@ -356,8 +357,8 @@ module RiderKick
       @repository_class = repository_filename.camelize
 
       # Generate code files
-      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
-      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}.rb")
+      template "domains/core/use_cases/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, RiderKick.configuration.use_cases_dir, @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}.rb")
+      template "domains/core/repositories/#{action + suffix}.rb.tt", File.join(RiderKick.configuration.domains_path, RiderKick.configuration.repositories_dir, @scope_path.to_s, "#{repository_filename}.rb")
 
       # Generate spec files
       generate_use_case_spec(action, suffix, use_case_filename)
@@ -365,13 +366,13 @@ module RiderKick
     end
 
     def copy_builder_and_entity_files
-      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}.rb")
-      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, 'entities', "#{@variable_subject}.rb")
+      template 'domains/core/builders/builder.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.builders_dir, "#{@variable_subject}.rb")
+      template 'domains/core/entities/entity.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.entities_dir, "#{@variable_subject}.rb")
     end
 
     def contract_fields
       @model_class.columns.reject { |c| ['id', 'created_at', 'updated_at', 'type'].include?(c.name.to_s) }
-        .map { |c| c.name.to_s }
+                  .map { |c| c.name.to_s }
     end
 
     # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---
@@ -394,6 +395,7 @@ module RiderKick
     def get_column_meta(field)
       @columns_meta_hash[field.to_s] || {}
     end
+
     # --- AKHIR BLOK MODIFIKASI ---
 
     def get_column_type(field)
@@ -415,7 +417,7 @@ module RiderKick
 
     def generate_use_case_spec(action, suffix, use_case_filename)
       template_name = "domains/core/use_cases/#{action + suffix}_spec.rb.tt"
-      spec_path = File.join(RiderKick.configuration.domains_path, 'use_cases', @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
+      spec_path     = File.join(RiderKick.configuration.domains_path, RiderKick.configuration.use_cases_dir, @route_scope_path.to_s, @scope_path.to_s, "#{use_case_filename}_spec.rb")
 
       if File.exist?(File.join(self.class.source_root, template_name))
         template template_name, spec_path
@@ -426,7 +428,7 @@ module RiderKick
 
     def generate_repository_spec(action, suffix, repository_filename)
       template_name = "domains/core/repositories/#{action + suffix}_spec.rb.tt"
-      spec_path = File.join(RiderKick.configuration.domains_path, 'repositories', @scope_path.to_s, "#{repository_filename}_spec.rb")
+      spec_path     = File.join(RiderKick.configuration.domains_path, RiderKick.configuration.repositories_dir, @scope_path.to_s, "#{repository_filename}_spec.rb")
 
       if File.exist?(File.join(self.class.source_root, template_name))
         template template_name, spec_path
@@ -437,7 +439,7 @@ module RiderKick
 
     def generate_spec_files
       # Generate builder spec (covers entity validation too)
-      builder_spec_path = File.join(RiderKick.configuration.domains_path, 'builders', "#{@variable_subject}_spec.rb")
+      builder_spec_path = File.join(RiderKick.configuration.domains_path, RiderKick.configuration.builders_dir, "#{@variable_subject}_spec.rb")
       template 'domains/core/builders/builder_spec.rb.tt', builder_spec_path
 
       # Generate model spec

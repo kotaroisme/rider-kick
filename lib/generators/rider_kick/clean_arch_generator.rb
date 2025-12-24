@@ -117,30 +117,30 @@ module RiderKick
     end
 
     def setup_domain_structure
-      empty_directory File.join(RiderKick.configuration.domains_path, 'use_cases/contract')
-      empty_directory File.join(RiderKick.configuration.domains_path, 'repositories')
-      empty_directory File.join(RiderKick.configuration.domains_path, 'builders')
-      empty_directory File.join(RiderKick.configuration.domains_path, 'entities')
-      empty_directory File.join(RiderKick.configuration.domains_path, 'utils')
+      empty_directory File.join(RiderKick.configuration.domains_path, "#{RiderKick.configuration.use_cases_dir}/contract")
+      empty_directory File.join(RiderKick.configuration.domains_path, RiderKick.configuration.repositories_dir)
+      empty_directory File.join(RiderKick.configuration.domains_path, RiderKick.configuration.builders_dir)
+      empty_directory File.join(RiderKick.configuration.domains_path, RiderKick.configuration.entities_dir)
+      empty_directory File.join(RiderKick.configuration.domains_path, RiderKick.configuration.utils_dir)
 
       # then
       copy_domain_file
     end
 
     def copy_domain_file
-      template 'domains/core/use_cases/contract/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, 'use_cases/contract', 'pagination.rb')
-      template 'domains/core/use_cases/contract/default.rb.tt', File.join(RiderKick.configuration.domains_path, 'use_cases/contract', 'default.rb')
-      template 'domains/core/use_cases/get_version.rb.tt', File.join(RiderKick.configuration.domains_path, 'use_cases', 'get_version.rb')
+      template 'domains/core/use_cases/contract/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, "#{RiderKick.configuration.use_cases_dir}/contract", 'pagination.rb')
+      template 'domains/core/use_cases/contract/default.rb.tt', File.join(RiderKick.configuration.domains_path, "#{RiderKick.configuration.use_cases_dir}/contract", 'default.rb')
+      template 'domains/core/use_cases/get_version.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.use_cases_dir, 'get_version.rb')
 
-      template 'domains/core/builders/error.rb.tt', File.join(RiderKick.configuration.domains_path, 'builders', 'error.rb')
-      template 'domains/core/builders/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, 'builders', 'pagination.rb')
+      template 'domains/core/builders/error.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.builders_dir, 'error.rb')
+      template 'domains/core/builders/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.builders_dir, 'pagination.rb')
 
-      template 'domains/core/entities/error.rb.tt', File.join(RiderKick.configuration.domains_path, 'entities', 'error.rb')
-      template 'domains/core/entities/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, 'entities', 'pagination.rb')
+      template 'domains/core/entities/error.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.entities_dir, 'error.rb')
+      template 'domains/core/entities/pagination.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.entities_dir, 'pagination.rb')
 
-      template 'domains/core/repositories/abstract_repository.rb.tt', File.join(RiderKick.configuration.domains_path, 'repositories', 'abstract_repository.rb')
-      template 'domains/core/utils/abstract_utils.rb.tt', File.join(RiderKick.configuration.domains_path, 'utils', 'abstract_utils.rb')
-      template 'domains/core/utils/request_methods.rb.tt', File.join(RiderKick.configuration.domains_path, 'utils', 'request_methods.rb')
+      template 'domains/core/repositories/abstract_repository.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.repositories_dir, 'abstract_repository.rb')
+      template 'domains/core/utils/abstract_utils.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.utils_dir, 'abstract_utils.rb')
+      template 'domains/core/utils/request_methods.rb.tt', File.join(RiderKick.configuration.domains_path, RiderKick.configuration.utils_dir, 'request_methods.rb')
     end
 
     def setup_initializers
@@ -224,6 +224,7 @@ module RiderKick
         group :development, :test do
           gem "rspec-rails"
           gem "factory_bot_rails"
+          gem 'rails-controller-testing'
           gem "faker"
           gem "shoulda-matchers"
         end

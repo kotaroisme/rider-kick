@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+RiderKick.configure do |config|
+  # Specify the path where domain logic (entities, use cases, etc.) will be generated.
+  # Default: 'app/domains/' for main apps, 'engines/<engine_name>/app/domains/' for engines.
+  # config.domains_path = 'app/domains'
+
+  # Specify the path where models will be generated.
+  # Default: 'app/models/models' for main apps, 'engines/<engine_name>/app/models/<engine_name>/models' for engines.
+  # config.models_path = 'app/models/models'
+
+  # Specify the engine name if you are working within a Rails engine.
+  # config.engine_name = nil
+
+  # Specify a domain scope (e.g., 'admin/', 'api/v1/').
+  # config.domain_scope = ''
+
+  # Specify custom directory names for domain layers.
+  # config.use_cases_dir = 'use_cases'
+  # config.entities_dir = 'entities'
+  # config.adapters_dir = 'adapters'
+  # config.repositories_dir = 'repositories'
+  # config.builders_dir = 'builders'
+  # config.utils_dir = 'utils'
+
+  # Register custom type mappings for Dry::Types
+  # config.register_type_mapping('my_custom_type', 'Types::MyCustomType')
+  # config.register_entity_type_mapping('my_custom_type', 'Types::Strict::MyCustomType')
+end

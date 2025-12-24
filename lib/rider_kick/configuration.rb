@@ -58,18 +58,27 @@ module RiderKick
 
   class Configuration
     attr_reader :domains_path, :models_path, :engine_name, :domain_scope, :template_path
-    attr_accessor :entities_path, :adapters_path
+    attr_accessor :entities_path, :adapters_path, :use_cases_dir, :entities_dir, :adapters_dir, :repositories_dir, :builders_dir, :utils_dir
 
     def initialize
       @engine_name   = detect_engine_name
       @domain_scope  = ''
+      @use_cases_dir = 'use_cases'
+      @entities_dir = 'entities'
+      @adapters_dir = 'adapters'
+      @repositories_dir = 'repositories'
+      @builders_dir = 'builders'
+      @utils_dir = 'utils'
       @domains_path  = detect_domains_path
-      @entities_path = File.join(@domains_path, 'entities')
-      @adapters_path = File.join(@domains_path, 'adapters')
+      @entities_path = File.join(@domains_path, @entities_dir)
+      @adapters_path = File.join(@domains_path, @adapters_dir)
       @models_path   = detect_models_path
       @template_path = nil
       @type_mapping = DEFAULT_TYPE_MAPPING.dup
       @entity_type_mapping = DEFAULT_ENTITY_TYPE_MAPPING.dup
+
+      @domains_path_overridden = false
+      @models_path_overridden = false
     end
 
     attr_reader :type_mapping
@@ -87,13 +96,15 @@ module RiderKick
     def domains_path=(path)
       validate_path_format!(path, 'domains_path')
       @domains_path = File.expand_path(path)
-      @entities_path = File.join(@domains_path, 'entities')
-      @adapters_path = File.join(@domains_path, 'adapters')
+      @entities_path = File.join(@domains_path, @entities_dir)
+      @adapters_path = File.join(@domains_path, @adapters_dir)
+      @domains_path_overridden = true
     end
 
     def models_path=(path)
       validate_path_format!(path, 'models_path')
       @models_path = File.expand_path(path)
+      @models_path_overridden = true
     end
 
     def template_path=(path)
@@ -112,10 +123,16 @@ module RiderKick
         validate_engine_name_format!(name)
         @engine_name = name.to_s
       end
-      @models_path = detect_models_path
-      @domains_path = detect_domains_path
-      @entities_path = File.join(@domains_path, 'entities')
-      @adapters_path = File.join(@domains_path, 'adapters')
+
+      unless @models_path_overridden
+        @models_path = detect_models_path
+      end
+
+      unless @domains_path_overridden
+        @domains_path = detect_domains_path
+        @entities_path = File.join(@domains_path, 'entities')
+        @adapters_path = File.join(@domains_path, 'adapters')
+      end
     end
 
     def domain_scope=(scope)
@@ -125,9 +142,12 @@ module RiderKick
         validate_domain_scope_format!(scope)
         @domain_scope = scope.to_s
       end
-      @domains_path = detect_domains_path
-      @entities_path = File.join(@domains_path, 'entities')
-      @adapters_path = File.join(@domains_path, 'adapters')
+
+      unless @domains_path_overridden
+        @domains_path = detect_domains_path
+        @entities_path = File.join(@domains_path, 'entities')
+        @adapters_path = File.join(@domains_path, 'adapters')
+      end
     end
 
     private

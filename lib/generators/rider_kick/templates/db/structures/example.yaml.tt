@@ -8,6 +8,8 @@ resource_owner_id: <%= @resource_owner_id %> # account_id
 resource_owner: <%= @resource_owner %> # account
 actor: <%= @actor %> # user
 actor_id: <%= @actor_id %> # user_id
+scope: '' #dashboard
+domain: '' # core
 
 fields:
 <% @fields.each do |f| -%>

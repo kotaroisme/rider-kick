@@ -83,6 +83,7 @@ module RiderKick
       @contract_lines_for_create = @fields.map do |field_name|
         column_meta = @columns_meta_hash[field_name]
         next nil if column_meta.nil?
+        next nil if @resource_owner_id.to_s.eql?(field_name.to_s)
 
         predicate = column_meta[:null] ? 'optional' : 'required'
         db_type = get_column_type(field_name).to_s
@@ -104,6 +105,7 @@ module RiderKick
       @contract_lines_for_update = @fields.map do |field_name|
         column_meta = @columns_meta_hash[field_name]
         next nil if column_meta.nil?
+        next nil if @resource_owner_id.to_s.eql?(field_name.to_s)
 
         db_type = get_column_type(field_name).to_s
         validation_type = @type_mapping[db_type]
