@@ -10,15 +10,35 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
     let(:valid_params) do
       {
 <% if @resource_owner_id.present? -%>
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+        <%= @resource_owner_id %>: SecureRandom.uuid,
 <% end -%>
 <% @fields.each_with_index do |field, index| -%>
 <% next if @resource_owner_id.present? && field == @resource_owner_id -%>
 <% field_meta = columns_meta.find { |col| col[:name] == field } -%>
-<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
-        <%= field %>: Time.zone.now<%= index < @fields.length - 1 ? ',' : '' %>
+<% is_last = index == @fields.length - 1 || (@resource_owner_id.present? && index == @fields.length - 1) -%>
+<% if field_meta -%>
+<% case field_meta[:type] -%>
+<% when :uuid -%>
+        <%= field %>: SecureRandom.uuid<%= is_last ? '' : ',' %>
+<% when :datetime, :timestamp -%>
+        <%= field %>: Time.zone.now<%= is_last ? '' : ',' %>
+<% when :date -%>
+        <%= field %>: Date.current<%= is_last ? '' : ',' %>
+<% when :boolean -%>
+        <%= field %>: true<%= is_last ? '' : ',' %>
+<% when :integer, :bigint -%>
+        <%= field %>: 1<%= is_last ? '' : ',' %>
+<% when :decimal, :float -%>
+        <%= field %>: 1.0<%= is_last ? '' : ',' %>
+<% when :json, :jsonb -%>
+        <%= field %>: {}<%= is_last ? '' : ',' %>
+<% when :text -%>
+        <%= field %>: '<%= field %>_text'<%= is_last ? '' : ',' %>
 <% else -%>
-        <%= field %>: '<%= field %>_value'<%= index < @fields.length - 1 ? ',' : '' %>
+        <%= field %>: '<%= field %>_value'<%= is_last ? '' : ',' %>
+<% end -%>
+<% else -%>
+        <%= field %>: '<%= field %>_value'<%= is_last ? '' : ',' %>
 <% end -%>
 <% end -%>
       }
@@ -39,7 +59,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
         result = described_class.new(contract).result
 
         expect(result).to be_success
-        expect(result.value!).to eq(entity)
+        expect(result.success).to eq(entity)
       end
     end
 

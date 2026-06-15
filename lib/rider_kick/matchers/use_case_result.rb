@@ -21,7 +21,7 @@ module RiderKick
       def success_case
         Dry::Matcher::Case.new(
           match:   ->(value) { value.is_a?(Dry::Monads::Success) },
-          resolve: ->(value) { value.value! }
+          resolve: ->(value) { value.success }
         )
       end
 

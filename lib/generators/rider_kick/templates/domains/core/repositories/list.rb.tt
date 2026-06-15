@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
-  include Pagy::Backend
-
   def initialize(params:)
     @params = prepare! params, sanitize: true
     build_pagination_variable! @params
@@ -20,8 +18,15 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
     end
 <% end -%>
     return Success Hashie::Mash.new({response: [], meta: {}}) unless resources.present?
-    pagy, results = pagy(resources.order(created_at: :desc), limit: @per_page, page: @page)
+
+    collection = resources.order(created_at: :desc)
+    count = collection.count(:all)
+    offset = (@page - 1) * @per_page
+    results = collection.offset(offset).limit(@per_page)
+
+    pagy = Pagy::Offset.new(count: count, page: @page, limit: @per_page, request: false)
     response      = results.map { |result| <%= domain_class_name %>::Builders::<%= @subject_class %>.new(result).build }
+
     Success Hashie::Mash.new({response: response, meta: paginate!(pagy)})
   end
 

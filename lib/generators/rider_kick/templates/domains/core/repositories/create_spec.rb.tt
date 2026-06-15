@@ -1,78 +1,169 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
-  describe '#call' do
-    let(:builder) { instance_double(<%= domain_class_name %>::Builders::<%= @subject_class %>) }
-    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
-    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
+  describe "#call" do
+<% if @resource_owner_id.present? -%>
+    let(:<%= @resource_owner %>) { create(:<%= @resource_owner %>)}
+    let(:<%= @resource_owner_id %>) { <%= @resource_owner %>.id }
+<% end -%>
+<% @fields.each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+    let(:<%= field.delete_suffix("_id") %>) { create(:<%= field.delete_suffix("_id") %>, <%= @resource_owner %>: <%= @resource_owner %>)}
+    let(:<%= field %>) { <%= field.delete_suffix("_id") %>.id }
+<% end -%>
+<% end -%>
 
     let(:valid_params) do
       Hashie::Mash.new({
 <% if @resource_owner_id.present? -%>
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+        <%= @resource_owner_id %>: <%= @resource_owner_id %>,
 <% end -%>
 <% @fields.each_with_index do |field, index| -%>
 <% next if @resource_owner_id.present? && field == @resource_owner_id -%>
 <% field_meta = columns_meta.find { |col| col[:name] == field } -%>
-<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
-        <%= field %>: Time.zone.now<%= index < @fields.length - 1 ? ',' : '' %>
+<% is_last = index == @fields.length - 1 || (@resource_owner_id.present? && index == @fields.length - 1) -%>
+<% if field_meta -%>
+<% case field_meta[:type] -%>
+<% when :uuid -%>
+        <%= field %>: <%= field %><%= is_last ? '' : ',' %>
+<% when :datetime, :timestamp -%>
+        <%= field %>: Time.zone.now<%= is_last ? '' : ',' %>
+<% when :boolean -%>
+        <%= field %>: true<%= is_last ? '' : ',' %>
+<% when :integer -%>
+        <%= field %>: 1<%= is_last ? '' : ',' %>
+<% when :decimal, :float -%>
+        <%= field %>: 1.0<%= is_last ? '' : ',' %>
 <% else -%>
-        <%= field %>: '<%= field %>_value'<%= index < @fields.length - 1 ? ',' : '' %>
+        <%= field %>: "<%= field %>_value"<%= is_last ? '' : ',' %>
+<% end -%>
+<% else -%>
+        <%= field %>: "<%= field %>_value"<%= is_last ? '' : ',' %>
 <% end -%>
 <% end -%>
       })
     end
 
-    let(:error_messages) do
-      [
-        { 'attribute' => '<%= @fields.first %>', 'type' => 'blank', 'options' => { 'message' => 'must be valid format' } },
-        { 'attribute' => '<%= @fields[1] || @fields.first %>', 'type' => 'invalid', 'options' => { 'message' => 'must be valid format' } }
-      ]
-    end
-
-    let(:active_model_errors) do
-      errors = double('errors')
-      allow(errors).to receive(:each).and_yield(
-        double(as_json: error_messages.first)
-      ).and_yield(
-        double(as_json: error_messages.last)
-      )
-      errors
-    end
-
     subject(:repository) { described_class.new(params: valid_params) }
 
-    before do
-      allow(<%= domain_class_name %>::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
-      allow(builder).to receive(:build).and_return(entity)
-    end
+    context "with valid params" do
+      it "must valid contract" do
+        expect(<%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>.contract!(valid_params)).to be_success
+      end
 
-    context 'when creation is successful' do
-      it 'creates a new <%= @variable_subject %> and returns success with entity', :aggregate_failures do
-        allow(<%= @model_class %>).to receive(:new).with(valid_params.to_h).and_return(<%= @variable_subject %>)
-        allow(<%= @variable_subject %>).to receive(:save).and_return(true)
+      it "persists to database" do
+        expect { repository.call }.to change(<%= @model_class %>, :count).by(1)
+      end
 
-        result = repository.call(builder: true)
+      it "returns success with entity", :aggregate_failures do
+        result = repository.call
 
         expect(result).to be_success
-        expect(result.value!).to eq(entity)
+        expect(result.success).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
+<% @fields.first(3).each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && [:uuid, :boolean, :integer, :decimal, :float].include?(field_meta[:type]) -%>
+        expect(result.success.<%= field %>).to eq(valid_params.<%= field %>)
+<% elsif field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
+        expect(result.success.<%= field %>).to be_present
+<% else -%>
+        expect(result.success.<%= field %>).to eq( valid_params.<%= field %>)
+<% end -%>
+<% end -%>
+<% if @resource_owner_id.present? -%>
+        expect(result.success.<%= @resource_owner_id %>).to eq(<%= @resource_owner_id %>)
+<% end -%>
+      end
+
+      it "stores correct data in database" do
+        repository.call
+
+        record = <%= @model_class %>.last
+<% @fields.first(3).each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && [:uuid, :boolean, :integer, :decimal, :float].include?(field_meta[:type]) -%>
+        expect(record.<%= field %>).to eq(valid_params.<%= field %>)
+<% elsif field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
+        expect(record.<%= field %>).to be_present
+<% else -%>
+        expect(record.<%= field %>).to eq(valid_params.<%= field %>)
+<% end -%>
+<% end -%>
+<% if @resource_owner_id.present? -%>
+        expect(record.<%= @resource_owner_id %>).to eq(<%= @resource_owner_id %>)
+<% end -%>
       end
     end
 
-    context 'when creation fails' do
-      it 'returns failure with errors', :aggregate_failures do
-        allow(<%= @model_class %>).to receive(:new).with(valid_params.to_h).and_return(<%= @variable_subject %>)
-        allow(<%= @variable_subject %>).to receive(:save).and_return(false)
-        allow(<%= @variable_subject %>).to receive(:errors).and_return(active_model_errors)
+<% if @unique_fields.present? && @unique_fields.any? -%>
+<% @unique_fields.each do |unique_field| -%>
+<% if @resource_owner_id.present? -%>
+    context "with duplicate <%= unique_field %> in same <%= @resource_owner_id.gsub('_id', '') %> (DB constraint)" do
+      let!(:<%= "existing_#{@variable_subject}" %>) do
+        create(:<%= @variable_subject %>,
+               <%= unique_field %>: "<%= unique_field %>_value",
+               <%= @resource_owner_id %>: <%= @resource_owner_id %>
+        )
+      end
 
-        result = repository.call(builder: true)
+      it "does not persist duplicate" do
+        expect { repository.call }.not_to change(<%= @model_class %>, :count)
+      end
+
+      it "returns failure with uniqueness error", :aggregate_failures do
+        result = repository.call
 
         expect(result).to be_failure
-        # Verify error structure matches build_errors output
         expect(result.failure).to be_an(Array)
       end
     end
+
+    context "with same <%= unique_field %> in different <%= @resource_owner_id.gsub('_id', '') %>" do
+      let(:other_<%= @resource_owner_id %>) { SecureRandom.uuid }
+
+      let!(:<%= "existing_#{@variable_subject}" %>) do
+        create(:<%= @variable_subject %>,
+               <%= unique_field %>: "<%= unique_field %>_value",
+               <%= @resource_owner_id %>: other_<%= @resource_owner_id %>
+        )
+      end
+
+      it "allows creation (different <%= @resource_owner_id.gsub('_id', '') %> scope)" do
+        expect { repository.call }.to change(<%= @model_class %>, :count).by(1)
+      end
+
+      it "returns success" do
+        result = repository.call
+
+        expect(result).to be_success
+      end
+    end
+<% else -%>
+    context "with duplicate <%= unique_field %> (DB constraint)" do
+      let!(:<%= "existing_#{@variable_subject}" %>) do
+        create(:<%= @variable_subject %>, <%= unique_field %>: "<%= unique_field %>_value")
+      end
+
+      it "does not persist duplicate" do
+        expect { repository.call }.not_to change(<%= @model_class %>, :count)
+      end
+
+      it "returns failure with uniqueness error", :aggregate_failures do
+        result = repository.call
+
+        expect(result).to be_failure
+        expect(result.failure).to be_an(Array)
+      end
+    end
+<% end -%>
+
+<% end -%>
+<% end -%>
   end
 end

@@ -2,7 +2,7 @@
 
 class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %> < <%= domain_class_name %>::Repositories::AbstractRepository
   def initialize(params:)
-    @id     = params.id
+    @id     = params[:id]
     @params = prepare! params.except(:id), sanitize: true
   end
 
@@ -12,7 +12,7 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
 <% else -%>
     resource = <%= @model_class %>.find_by(id: @id)
 <% end -%>
-    return Failure '<%= @subject_class %> not found' unless resource.present?
+    return Failure(build_error(:not_found, '<%= @subject_class %> not found')) unless resource.present?
 <% if @uploaders.present? -%>
     # Remove the existing images if a new one is being uploaded
 <% @uploaders.each do |uplaoder| -%>

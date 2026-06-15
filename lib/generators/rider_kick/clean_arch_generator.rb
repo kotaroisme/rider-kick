@@ -221,6 +221,7 @@ module RiderKick
 
     def gem_dependencies
       <<~RUBY
+
         group :development, :test do
           gem "rspec-rails"
           gem "factory_bot_rails"
@@ -241,9 +242,6 @@ module RiderKick
 
         # pagination
         gem 'pagy'
-
-        # models validation
-        gem 'schema_validations'
       RUBY
     end
 

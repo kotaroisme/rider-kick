@@ -6,30 +6,41 @@ RSpec.describe <%= domain_class_name %>::Builders::<%= @subject_class %>, type: 
   describe '#build' do
     let(:<%= @variable_subject %>) do
       ClassStubber::Model.new(
-        'id' => 'test-id-123',
-<% 
+        'id' => SecureRandom.uuid,
+<%
 # Get uploader field names to exclude from entity_db_fields
 uploader_names = @uploaders.map { |u| u.name.to_s }
 -%>
 <% @entity_db_fields.each do |field| -%>
 <% next if uploader_names.include?(field.to_s) -%>
 <% column_meta = get_column_meta(field) -%>
-<% case column_meta[:type].to_s -%>
-<% when 'datetime', 'timestamp' -%>
-        '<%= field %>' => Time.current,
-<% when 'date' -%>
-        '<%= field %>' => Date.current,
-<% when 'time' -%>
-        '<%= field %>' => Time.current,
-<% when 'boolean' -%>
-        '<%= field %>' => true,
-<% when 'integer', 'bigint' -%>
-        '<%= field %>' => 123,
-<% when 'decimal', 'float' -%>
-        '<%= field %>' => 123.45,
-<% else -%>
-        '<%= field %>' => '<%= field %>_value',
-<% end -%>
+<%
+  faker_val = case field.to_s
+              when /email/ then "Faker::Internet.email"
+              when /name/ then "Faker::Name.name"
+              when /first_name/ then "Faker::Name.first_name"
+              when /last_name/ then "Faker::Name.last_name"
+              when /title/ then "Faker::Book.title"
+              when /description/ then "Faker::Lorem.paragraph"
+              when /address/ then "Faker::Address.full_address"
+              when /phone/ then "Faker::PhoneNumber.cell_phone"
+              when /url/, /website/ then "Faker::Internet.url"
+              when /price/ then "Faker::Commerce.price"
+              else
+                case column_meta[:type].to_s
+                when 'datetime', 'timestamp' then "Faker::Time.backward(days: 14)"
+                when 'date' then "Faker::Date.backward(days: 14)"
+                when 'time' then "Faker::Time.backward(days: 14)"
+                when 'boolean' then "Faker::Boolean.boolean"
+                when 'integer', 'bigint' then "Faker::Number.number(digits: 2)"
+                when 'float' then "Faker::Number.decimal(l_digits: 2, r_digits: 2).to_f"
+                when 'decimal' then "Faker::Number.decimal(l_digits: 2, r_digits: 2).to_d"
+                when 'uuid' then "SecureRandom.uuid"
+                else "Faker::Lorem.word"
+                end
+              end
+-%>
+        '<%= field %>' => <%= faker_val %>,
 <% end -%>
 <% @uploaders.each do |uploader| -%>
 <% if uploader.type == 'single' -%>
@@ -52,7 +63,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
       entity = builder.build
 
       expect(entity).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
-      expect(entity.id).to eq('test-id-123')
+      expect(entity.id).to be_a(String)
 <% @entity_db_fields.first(2).each do |field| -%>
 <% column_meta = get_column_meta(field) -%>
 <% case column_meta[:type].to_s -%>
@@ -61,20 +72,22 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 <% when 'date' -%>
       expect(entity.<%= field %>).to be_a(Date)
 <% when 'boolean' -%>
-      expect(entity.<%= field %>).to eq(true)
+      expect([true, false]).to include(entity.<%= field %>)
 <% when 'integer', 'bigint' -%>
-      expect(entity.<%= field %>).to eq(123)
+      expect(entity.<%= field %>).to be_a(Integer)
 <% when 'decimal', 'float' -%>
-      expect(entity.<%= field %>).to eq(123.45)
+      expect(entity.<%= field %>).to be_a(Numeric)
+<% when 'uuid' -%>
+      expect(entity.<%= field %>).to be_a(String)
 <% else -%>
-      expect(entity.<%= field %>).to eq('<%= field %>_value')
+      expect(entity.<%= field %>).to be_a(String)
 <% end -%>
 <% end -%>
     end
 
     it 'includes all required entity attributes', :aggregate_failures do
       entity = builder.build
-      
+
       # Entity must have these attributes (keys must exist, values can be nil for optional)
       expect(entity).to respond_to(:id)
 <% @entity_db_fields.each do |field| -%>
@@ -96,7 +109,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
     describe '#attributes_for_entity' do
       it 'returns hash with uploader attributes', :aggregate_failures do
         attributes = builder.send(:attributes_for_entity)
-        
+
         expect(attributes).to be_a(Hash)
 <% @uploaders.each do |uploader| -%>
 <% if uploader.type == 'single' -%>
@@ -109,7 +122,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 
       it 'generates correct URL attributes', :aggregate_failures do
         attributes = builder.send(:attributes_for_entity)
-        
+
 <% @uploaders.each do |uploader| -%>
 <% if uploader.type == 'single' -%>
         expect(attributes[:<%= uploader.name %>_url]).to eq('http://example.com/<%= uploader.name %>.jpg')
@@ -125,14 +138,14 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
     it 'ensures all entity attributes have correct keys and types', :aggregate_failures do
       entity = builder.build
       entity_hash = entity.to_h
-      
+
       # All entity attributes must have keys in the hash (source of truth from entity)
       expect(entity_hash).to have_key(:id)
       expect(entity.id).to be_a(String)
 <% @entity_db_fields.each do |field| -%>
 <% next if uploader_names.include?(field.to_s) -%>
 <% column_meta = get_column_meta(field) -%>
-      
+
       expect(entity_hash).to have_key(:<%= field %>)
 <% case column_meta[:type].to_s -%>
 <% when 'datetime', 'timestamp', 'time' -%>
@@ -151,19 +164,19 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 <% end -%>
 <% @uploaders.each do |uploader| -%>
 <% if uploader.type == 'single' -%>
-      
+
       expect(entity_hash).to have_key(:<%= uploader.name %>_url)
       expect(entity.<%= uploader.name %>_url).to be_a(String).or be_nil
 <% else -%>
-      
+
       expect(entity_hash).to have_key(:<%= uploader.name %>_urls)
       expect(entity.<%= uploader.name %>_urls).to be_a(Array)
 <% end -%>
 <% end -%>
-      
+
       expect(entity_hash).to have_key(:created_at)
       expect(entity.created_at).to be_a(Time) if entity.created_at.present?
-      
+
       expect(entity_hash).to have_key(:updated_at)
       expect(entity.updated_at).to be_a(Time) if entity.updated_at.present?
     end
@@ -171,7 +184,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
     it 'validates entity type schema definitions', :aggregate_failures do
       # Verify entity has correct Dry::Types definitions
       schema = <%= domain_class_name %>::Entities::<%= @subject_class %>.schema
-      
+
       # ID must be required (not optional)
       id_key = schema.key(:id)
       expect(id_key.required?).to be true
@@ -180,7 +193,7 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 <% @entity_db_fields.each do |field| -%>
 <% next if uploader_names.include?(field.to_s) -%>
 <% column_meta = get_column_meta(field) -%>
-      
+
       # <%= field %>: <%= column_meta[:null] ? 'optional' : 'required' %>
 <% if column_meta[:null] -%>
       # Optional field - can be nil
@@ -195,22 +208,22 @@ uploader_names = @uploaders.map { |u| u.name.to_s }
 <% end -%>
 <% @uploaders.each do |uploader| -%>
 <% if uploader.type == 'single' -%>
-      
+
       # <%= uploader.name %>_url: optional (uploader can be nil)
       <%= uploader.name %>_url_key = schema.key(:<%= uploader.name %>_url)
       expect(<%= uploader.name %>_url_key.required?).to be false
 <% else -%>
-      
+
       # <%= uploader.name %>_urls: required (but can be empty array)
       <%= uploader.name %>_urls_key = schema.key(:<%= uploader.name %>_urls)
       expect(<%= uploader.name %>_urls_key.required?).to be true
 <% end -%>
 <% end -%>
-      
+
       # Timestamps - check their actual definition
       created_at_key = schema.key(:created_at)
       updated_at_key = schema.key(:updated_at)
-      
+
       # Verify timestamps exist (they might be optional in some entities)
       expect(schema.keys.map(&:name)).to include(:created_at, :updated_at)
     end

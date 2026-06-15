@@ -1,62 +1,114 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
-  describe '#call' do
-    let(:builder) { instance_double(<%= domain_class_name %>::Builders::<%= @subject_class %>) }
-    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
-    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
-    let(:<%= @variable_subject %>_id) { 'test-id-123' }
-    
-    let(:valid_params) do
+  describe "#call" do
+
+<% if @resource_owner_id.present? -%>
+    let(:<%= @resource_owner %>) { create(:<%= @resource_owner %>)}
+    let(:<%= @resource_owner_id %>) { <%= @resource_owner %>.id }
+<% end -%>
+<% @fields.each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+    let(:<%= field.delete_suffix("_id") %>) { create(:<%= field.delete_suffix("_id") %>, <%= @resource_owner %>: <%= @resource_owner %>) }
+    let(:<%= field %>) { <%= field.delete_suffix("_id") %>.id }
+<% end -%>
+<% end -%>
+
+<% if @resource_owner_id.present? -%>
+    let!(:<%= @variable_subject %>) do
+      create(:<%= @variable_subject %>,
+        <%= @resource_owner_id %>: <%= @resource_owner_id %>,
+<% @fields.each do |field| -%>
+<% next if field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+        <%= field %>: <%= field %>,
+<% end -%>
+<% end -%>
+      )
+    end
+<% else -%>
+    let!(:<%= @variable_subject %>) do
+      create(:<%= @variable_subject %>,
+<% @fields.each do |field| -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+        <%= field %>: <%= field %>,
+<% end -%>
+<% end -%>
+      )
+    end
+<% end -%>
+
+    let(:params) do
       Hashie::Mash.new({
-        id: <%= @variable_subject %>_id<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract %>,
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
+        id: <%= @variable_subject %>.id<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract %>,
+        <%= @resource_owner_id %>: <%= @resource_owner_id %><% end %>
       })
     end
 
-    subject(:repository) { described_class.new(params: valid_params) }
+    subject(:repository) { described_class.new(params: params) }
 
-    before do
-      allow(<%= domain_class_name %>::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
-      allow(builder).to receive(:build).and_return(entity)
+    context "with valid params" do
+      it "must valid contract" do
+        expect(<%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>.contract!(params)).to be_success
+      end
     end
 
-    context 'when <%= @variable_subject %> exists' do
-      it 'fetches the <%= @variable_subject %> and returns success with entity', :aggregate_failures do
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(
-          id: <%= @variable_subject %>_id,
-          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
-        ).and_return(<%= @variable_subject %>)
-<% else -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(<%= @variable_subject %>)
-<% end -%>
-
-        result = repository.call(builder: true)
+    context "when <%= @variable_subject %> exists" do
+      it "returns success with entity", :aggregate_failures do
+        result = repository.call
 
         expect(result).to be_success
-        expect(result.value!).to eq(entity)
+        expect(result.success).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
+        expect(result.success.id).to eq(<%= @variable_subject %>.id)
+<% @fields.first(2).each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+        expect(result.success.<%= field %>).to eq(<%= @variable_subject %>.<%= field %>)
+<% end -%>
+<% if @resource_owner_id.present? -%>
+        expect(result.success.<%= @resource_owner_id %>).to eq(<%= @resource_owner_id %>)
+<% end -%>
       end
     end
 
-    context 'when <%= @variable_subject %> does not exist' do
-      it 'returns failure with not found message' do
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(
-          id: <%= @variable_subject %>_id,
-          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
-        ).and_return(nil)
-<% else -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(nil)
-<% end -%>
+    context "when <%= @variable_subject %> does not exist" do
+      let(:params) do
+        Hashie::Mash.new({
+          id: SecureRandom.uuid<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract %>,
+          <%= @resource_owner_id %>: <%= @resource_owner_id %><% end %>
+        })
+      end
 
-        result = repository.call(builder: true)
+      it "returns failure with not found message", :aggregate_failures do
+        result = repository.call
 
         expect(result).to be_failure
-        expect(result.failure).to eq('<%= @subject_class %> not found')
+        expect(result.failure).to eq("<%= @subject_class %> not found")
       end
     end
+
+<% if @resource_owner_id.present? && @has_resource_owner_id_in_fetch_by_id_contract -%>
+    context "when <%= @variable_subject %> belongs to different <%= @resource_owner_id.gsub('_id', '') %>" do
+      let(:other_<%= @resource_owner_id %>) { SecureRandom.uuid }
+      let(:params) do
+        Hashie::Mash.new({
+          id: <%= @variable_subject %>.id,
+          <%= @resource_owner_id %>: other_<%= @resource_owner_id %>
+        })
+      end
+
+      it "returns failure (<%= @resource_owner_id.gsub('_id', '') %> isolation)", :aggregate_failures do
+        result = repository.call
+
+        expect(result).to be_failure
+        expect(result.failure).to eq("<%= @subject_class %> not found")
+      end
+    end
+<% end -%>
   end
 end

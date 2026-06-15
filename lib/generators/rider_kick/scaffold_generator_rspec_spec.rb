@@ -131,22 +131,13 @@ RSpec.describe 'rider_kick:scaffold generator (RSpec generation)' do
 
           # Verifikasi konten spec file
           spec_content = File.read(spec_file)
-          expect(spec_content).to include('require \'rails_helper\'')
+          expect(spec_content).to include('require "rails_helper"')
           expect(spec_content).to include('RSpec.describe')
-          expect(spec_content).to include('describe \'#call\'')
+          expect(spec_content).to include('describe "#call"')
 
           # Only check Hashie::Mash for create, update, destroy, fetch_by_id (list uses simple hash)
           if ['create_product', 'update_product', 'destroy_product', 'fetch_product_by_id'].include?(repo)
             expect(spec_content).to include('Hashie::Mash.new')
-          end
-
-          # Verify error mocking for create, update, destroy (but not list or fetch_by_id)
-          if ['create_product', 'update_product', 'destroy_product'].include?(repo)
-            expect(spec_content).to include('let(:error_messages)')
-            expect(spec_content).to include('let(:active_model_errors)')
-            expect(spec_content).to include('allow(errors).to receive(:each)')
-            expect(spec_content).to include('double(as_json:')
-            expect(spec_content).to include("'options' => { 'message' => 'must be valid format' }")
           end
         end
 

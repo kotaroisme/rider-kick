@@ -93,11 +93,11 @@ module RiderKick
 
         unless @model_class.column_names.include?(field_name)
           raise ValidationError.new(
-            "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
-            structure_file:    "#{arg_structure}_structure.yaml",
-            field_name:        field_name,
-            model_class:       @model_class.to_s,
-            available_columns: @model_class.column_names
+                  "Repository filter error: Field '#{field_name}' tidak ditemukan di model #{@model_class}",
+                  structure_file:    "#{arg_structure}_structure.yaml",
+                  field_name:        field_name,
+                  model_class:       @model_class.to_s,
+                  available_columns: @model_class.column_names
           )
         end
       end
@@ -110,12 +110,12 @@ module RiderKick
 
       if missing_fields.any?
         raise ValidationError.new(
-          "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
-          structure_file:    "#{arg_structure}_structure.yaml",
-          missing_fields:    missing_fields,
-          model_class:       @model_class.to_s,
-          available_columns: @model_class.column_names,
-          suggestion:        "Update section 'entity.db_attributes' di YAML file"
+                "Entity configuration error: Field(s) tidak ditemukan di model #{@model_class}",
+                structure_file:    "#{arg_structure}_structure.yaml",
+                missing_fields:    missing_fields,
+                model_class:       @model_class.to_s,
+                available_columns: @model_class.column_names,
+                suggestion:        "Update section 'entity.db_attributes' di YAML file"
         )
       end
     end
@@ -131,13 +131,13 @@ module RiderKick
     def setup_structure_config
       # Determine structure file path based on engine configuration
       structure_path = if RiderKick.configuration.engine_name.present?
-                         # For engines, read structure file from engine's db/structures directory
-                         engine_name = RiderKick.configuration.engine_name.downcase
-                         "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
-                       else
-                         # For main app, read from host's db/structures directory
-                         "db/structures/#{arg_structure}_structure.yaml"
-                       end
+        # For engines, read structure file from engine's db/structures directory
+        engine_name = RiderKick.configuration.engine_name.downcase
+        "engines/#{engine_name}/db/structures/#{arg_structure}_structure.yaml"
+      else
+        # For main app, read from host's db/structures directory
+        "db/structures/#{arg_structure}_structure.yaml"
+      end
 
       validate_yaml_format!(structure_path)
       config     = YAML.load_file(structure_path)
@@ -200,15 +200,15 @@ module RiderKick
 
       # Route scope
       #  @route_scope_path  = arg_scope.fetch('scope', '').to_s.downcase
-      @route_scope_path  = @structure.domain.to_s.downcase
+      @route_scope_path  = @structure.scope.to_s.downcase
       @route_scope_class = @route_scope_path.camelize
 
       # Baca actor_id dari structure.yaml jika ada, jika tidak generate dari actor
       @actor_id = if @structure.actor_id.present?
-                    @structure.actor_id.to_s
-                  elsif @actor.present?
-                    "#{@actor.to_s.downcase}_id"
-                  end
+        @structure.actor_id.to_s
+      elsif @actor.present?
+        "#{@actor.to_s.downcase}_id"
+      end
 
       # Set flag untuk setiap action apakah resource_owner_id atau actor_id ada di contract
       # Ini digunakan di template repository untuk conditional logic
@@ -231,19 +231,19 @@ module RiderKick
 
       # Get contract untuk action tertentu
       contract = case action.to_s
-                 when 'list'
-                   @contract_list
-                 when 'fetch', 'fetch_by_id'
-                   @contract_fetch_by_id
-                 when 'create'
-                   @contract_create
-                 when 'update'
-                   @contract_update
-                 when 'destroy'
-                   @contract_destroy
-                 else
-                   []
-                 end
+      when 'list'
+        @contract_list
+      when 'fetch', 'fetch_by_id'
+        @contract_fetch_by_id
+      when 'create'
+        @contract_create
+      when 'update'
+        @contract_update
+      when 'destroy'
+        @contract_destroy
+      else
+        []
+      end
       contract ||= []
       # Check apakah contract string mengandung field name
       # Pattern: "required(:field_name)" atau "optional(:field_name)"
@@ -372,7 +372,7 @@ module RiderKick
 
     def contract_fields
       @model_class.columns.reject { |c| ['id', 'created_at', 'updated_at', 'type'].include?(c.name.to_s) }
-                  .map { |c| c.name.to_s }
+        .map { |c| c.name.to_s }
     end
 
     # --- AWAL BLOK MODIFIKASI: (PERBAIKAN KEGAGALAN #1) ---

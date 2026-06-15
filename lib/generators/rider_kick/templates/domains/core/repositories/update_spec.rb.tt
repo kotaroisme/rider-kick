@@ -1,118 +1,209 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @repository_class %>, type: :repository do
-  describe '#call' do
-    let(:builder) { instance_double(<%= domain_class_name %>::Builders::<%= @subject_class %>) }
-    let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
-    let(:<%= @variable_subject %>) { instance_double(<%= @model_class %>) }
-    let(:<%= @variable_subject %>_id) { 'test-id-123' }
-    
-    let(:valid_params) do
-      Hashie::Mash.new({
-        id: <%= @variable_subject %>_id,
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+  describe "#call" do
+<% if @resource_owner_id.present? -%>
+    let(:<%= @resource_owner %>) { create(:<%= @resource_owner %>)}
+    let(:<%= @resource_owner_id %>) { <%= @resource_owner %>.id }
 <% end -%>
-<% @fields.first(2).each_with_index do |field, index| -%>
+<% @fields.each do |field| -%>
 <% next if @resource_owner_id.present? && field == @resource_owner_id -%>
 <% field_meta = columns_meta.find { |col| col[:name] == field } -%>
-<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
-        <%= field %>: Time.zone.now<%= index < @fields.first(2).length - 1 ? ',' : '' %>
-<% else -%>
-        <%= field %>: 'updated_<%= field %>_value'<%= index < @fields.first(2).length - 1 ? ',' : '' %>
+<% if field_meta && field_meta[:type] == :uuid -%>
+    let(:<%= field.delete_suffix("_id") %>) { create(:<%= field.delete_suffix("_id") %>, <%= @resource_owner %>: <%= @resource_owner %>) }
+    let(:<%= field %>) { <%= field.delete_suffix("_id") %>.id }
 <% end -%>
 <% end -%>
-      })
-    end
 
-    let(:error_messages) do
-      [
-        { 'attribute' => '<%= @fields.first %>', 'type' => 'blank', 'options' => { 'message' => 'must be valid format' } },
-        { 'attribute' => '<%= @fields[1] || @fields.first %>', 'type' => 'invalid', 'options' => { 'message' => 'must be valid format' } }
-      ]
-    end
-
-    let(:active_model_errors) do
-      errors = double('errors')
-      allow(errors).to receive(:each).and_yield(
-        double(as_json: error_messages.first)
-      ).and_yield(
-        double(as_json: error_messages.last)
+<% if @resource_owner_id.present? -%>
+    let!(:<%= @variable_subject %>) do
+      create(:<%= @variable_subject %>,
+        <%= @resource_owner_id %>: <%= @resource_owner_id %>,
+<% @fields.each do |field| -%>
+<% next if field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+        <%= field %>: <%= field %>,
+<% end -%>
+<% end -%>
       )
-      errors
     end
-
-    subject(:repository) { described_class.new(params: valid_params) }
-
-    before do
-      allow(<%= domain_class_name %>::Builders::<%= @subject_class %>).to receive(:new).with(<%= @variable_subject %>).and_return(builder)
-      allow(builder).to receive(:build).and_return(entity)
-    end
-
-    context 'when <%= @variable_subject %> exists' do
-      before do
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(
-          id: <%= @variable_subject %>_id,
-          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
-        ).and_return(<%= @variable_subject %>)
 <% else -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(<%= @variable_subject %>)
-<% end -%>
-      end
-
-      context 'when update is successful' do
-        it 'updates the <%= @variable_subject %> and returns success with entity', :aggregate_failures do
-<% if @uploaders.present? -%>
-<% @uploaders.each do |uploader| -%>
-          allow(<%= @variable_subject %>).to receive(:<%= uploader.name %>).and_return(double(attached?: false))
+    let!(:<%= @variable_subject %>) do
+      create(:<%= @variable_subject %>,
+<% @fields.each do |field| -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :uuid -%>
+        <%= field %>: <%= field %>,
 <% end -%>
 <% end -%>
-          allow(<%= @variable_subject %>).to receive(:update).and_return(true)
+      )
+    end
+<% end -%>
 
-          result = repository.call(builder: true)
+    let(:original_values) { <%= @variable_subject %>.attributes.symbolize_keys }
 
-          expect(result).to be_success
-          expect(result.value!).to eq(entity)
-        end
-      end
-
-      context 'when update fails' do
-        it 'returns failure with errors', :aggregate_failures do
-<% if @uploaders.present? -%>
-<% @uploaders.each do |uploader| -%>
-          allow(<%= @variable_subject %>).to receive(:<%= uploader.name %>).and_return(double(attached?: false))
+    let(:update_attributes) do
+      {
+<% @fields.each_with_index do |field, index| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta -%>
+<% case field_meta[:type] -%>
+<% when :uuid -%>
+        <%= field %>: <%= field %>,
+<% when :boolean -%>
+        <%= field %>: Faker::Boolean.boolean,
+<% when :integer -%>
+        <%= field %>: Faker::Number.number(digits: 2),
+<% when :decimal, :float -%>
+        <%= field %>: Faker::Number.decimal(l_digits: 2, r_digits: 2),
+<% when :datetime, :timestamp -%>
+        <%= field %>: Faker::Time.forward(days: 7),
+<% when :date -%>
+        <%= field %>: Faker::Date.forward(days: 7),
+<% else -%>
+        <%= field %>: Faker::Lorem.word,
 <% end -%>
 <% end -%>
-          allow(<%= @variable_subject %>).to receive(:update).and_return(false)
-          allow(<%= @variable_subject %>).to receive(:errors).and_return(active_model_errors)
+<% end -%>
+      }
+    end
 
-          result = repository.call(builder: true)
+<% if @resource_owner_id.present? -%>
+    let(:params) { Hashie::Mash.new({ id: <%= @variable_subject %>.id, <%= @resource_owner_id %>: <%= @resource_owner_id %>, **update_attributes }) }
+<% else -%>
+    let(:params) { Hashie::Mash.new({ id: <%= @variable_subject %>.id, **update_attributes }) }
+<% end -%>
 
-          expect(result).to be_failure
-          # Verify error structure matches build_errors output
-          expect(result.failure).to be_an(Array)
-        end
+    subject(:repository) { described_class.new(params: params) }
+
+    context "with valid params" do
+      it "must valid contract" do
+        expect(<%= domain_class_name %>::UseCases::<%= [@route_scope_class, @scope_class, @use_case_class].reject { |c| c.empty? }.join("::") %>.contract!(params)).to be_success
       end
     end
 
-    context 'when <%= @variable_subject %> does not exist' do
-      it 'returns failure with not found message', :aggregate_failures do
-<% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(
-          id: <%= @variable_subject %>_id,
-          <%= @resource_owner_id %>: valid_params.<%= @resource_owner_id %>
-        ).and_return(nil)
-<% else -%>
-        allow(<%= @model_class %>).to receive(:find_by).with(id: <%= @variable_subject %>_id).and_return(nil)
-<% end -%>
+    context "when <%= @variable_subject %> exists and update succeeds" do
+      it "returns success with entities", :aggregate_failures do
+        result = repository.call
 
-        result = repository.call(builder: true)
+        expect(result).to be_success
+        expect(result.success).to be_a(<%= domain_class_name %>::Entities::<%= @subject_class %>)
+<% @fields.each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+        expect(result.success.<%= field %>).to eq(update_attributes[:<%= field %>])
+<% end -%>
+      end
+
+      it "persists changes to database", :aggregate_failures do
+        repository.call
+
+        <%= @variable_subject %>.reload
+<% @fields.each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+        expect(<%= @variable_subject %>.<%= field %>).to eq(update_attributes[:<%= field %>])
+<% end -%>
+      end
+    end
+
+    context "when <%= @variable_subject %> does not exist" do
+      let(:params) do
+        Hashie::Mash.new({
+          id: SecureRandom.uuid<% @fields.first(2).each do |field| -%>
+<% next if @resource_owner_id.present? && field == @resource_owner_id -%>
+<% field_meta = columns_meta.find { |col| col[:name] == field } -%>
+<% if field_meta && field_meta[:type] == :boolean %>,
+          <%= field %>: false<% end -%>
+<% if field_meta && field_meta[:type] == :uuid %>,
+          <%= field %>: <%= field %><% end -%>
+<% end %>
+        })
+      end
+
+      it "returns failure with not found message", :aggregate_failures do
+        result = repository.call
 
         expect(result).to be_failure
-        expect(result.failure).to eq('<%= @subject_class %> not found')
+        expect(result.failure).to eq("<%= @subject_class %> not found")
+      end
+    end
+
+<% if @unique_fields.present? && @unique_fields.any? && @resource_owner_id.present? -%>
+<% @unique_fields.each do |unique_field| -%>
+    context "with duplicate <%= unique_field %> in same <%= @resource_owner_id.gsub('_id', '') %> (DB constraint)" do
+      let!(:other_<%= @variable_subject %>) { create(:<%= @variable_subject %>, <%= @resource_owner_id %>: <%= @resource_owner_id %>, <%= unique_field %>: "taken_<%= unique_field %>") }
+
+      let(:params) do
+        Hashie::Mash.new({
+          id: <%= @variable_subject %>.id,
+          <%= unique_field %>: "taken_<%= unique_field %>"
+        })
+      end
+
+      it "returns failure", :aggregate_failures do
+        result = repository.call
+
+        expect(result).to be_failure
+        expect(result.failure).to be_an(Array)
+      end
+
+      it "does not update the record" do
+        repository.call
+
+        expect(<%= @variable_subject %>.reload.<%= unique_field %>).to eq(original_values[:<%= unique_field %>])
+      end
+    end
+
+<% end -%>
+<% end -%>
+    context "with partial update" do
+<% # Try to find a non-UUID field to test value change -%>
+<% first_field = @fields.reject { |f| @resource_owner_id.present? && f == @resource_owner_id }.find { |f| columns_meta.find { |c| c[:name] == f }[:type] != :uuid } -%>
+<% # Fallback to first field if only UUIDs match (e.g. only foreign keys) -%>
+<% first_field ||= @fields.reject { |f| @resource_owner_id.present? && f == @resource_owner_id }.first -%>
+<% first_field_meta = columns_meta.find { |col| col[:name] == first_field } -%>
+      let(:params) do
+        Hashie::Mash.new({
+          id: <%= @variable_subject %>.id,
+          <%= @resource_owner_id %>: <%= @resource_owner_id %>,
+<% if first_field_meta -%>
+<% case first_field_meta[:type] -%>
+<% when :boolean -%>
+          <%= first_field %>: false,
+<% when :integer -%>
+          <%= first_field %>: Faker::Number.number(digits: 2),
+<% when :decimal, :float -%>
+          <%= first_field %>: Faker::Number.decimal(l_digits: 2, r_digits: 2),
+<% when :uuid -%>
+          <%= first_field %>: <%= first_field %>,
+<% else -%>
+          <%= first_field %>: Faker::Lorem.word,
+<% end -%>
+<% end -%>
+        })
+      end
+
+      it "updates only specified fields", :aggregate_failures do
+        repository.call
+
+        <%= @variable_subject %>.reload
+<% if first_field_meta -%>
+<% case first_field_meta[:type] -%>
+<% when :boolean -%>
+        expect(<%= @variable_subject %>.<%= first_field %>).to eq(false)
+<% when :uuid -%>
+        expect(<%= @variable_subject %>.<%= first_field %>).to eq(<%= first_field %>)
+<% else -%>
+        expect(<%= @variable_subject %>.<%= first_field %>).to eq(params[:<%= first_field %>])
+<% end -%>
+<% end -%>
+
+<% @fields.reject { |f| (@resource_owner_id.present? && f == @resource_owner_id) || f == first_field }.each do |other_field| -%>
+        expect(<%= @variable_subject %>.<%= other_field %>).to eq(original_values[:<%= other_field %>])
+<% end -%>
       end
     end
   end

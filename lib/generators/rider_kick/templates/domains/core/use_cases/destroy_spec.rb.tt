@@ -6,12 +6,12 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
   describe '#call' do
     let(:repository) { instance_double(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
     let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
-    let(:<%= @variable_subject %>_id) { 'test-id-123' }
-    
+    let(:<%= @variable_subject %>_id) { SecureRandom.uuid  }
+
     let(:valid_params) do
       {
         id: <%= @variable_subject %>_id<% if @resource_owner_id.present? && @has_resource_owner_id_in_destroy_contract %>,
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value'<% end %>
+        <%= @resource_owner_id %>: SecureRandom.uuid <% end %>
       }
     end
 
@@ -30,7 +30,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
         result = described_class.new(contract).result
 
         expect(result).to be_success
-        expect(result.value!).to eq(entity)
+        expect(result.success).to eq(entity)
       end
     end
 

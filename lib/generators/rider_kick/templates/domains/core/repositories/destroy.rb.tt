@@ -12,10 +12,9 @@ class <%= domain_class_name %>::Repositories::<%= @scope_class %>::<%= @reposito
 <% else -%>
     resource = <%= @model_class %>.find_by(id: @id)
 <% end -%>
-    return Failure '<%= @subject_class %> not found' unless resource.present?
-    unless resource.destroy
-      return Failure build_errors(resource)
-    end
-    Success '<%= @subject_class%> Destroyed.'
+    return Failure(build_error(:not_found, '<%= @subject_class %> not found')) unless resource.present?
+    entity = <%= domain_class_name %>::Builders::<%= @subject_class %>.new(resource).build
+    return Failure(build_errors(resource)) unless resource.destroy
+    Success entity
   end
 end

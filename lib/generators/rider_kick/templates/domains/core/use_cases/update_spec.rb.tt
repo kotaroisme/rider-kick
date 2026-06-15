@@ -6,21 +6,41 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
   describe '#call' do
     let(:repository) { instance_double(<%= domain_class_name %>::Repositories::<%= @scope_class%>::<%= @repository_class%>) }
     let(:entity) { instance_double(<%= domain_class_name %>::Entities::<%= @subject_class %>) }
-    let(:<%= @variable_subject %>_id) { 'test-id-123' }
-    
+    let(:<%= @variable_subject %>_id) { SecureRandom.uuid  }
+
     let(:valid_params) do
       {
         id: <%= @variable_subject %>_id,
 <% if @resource_owner_id.present? && @has_resource_owner_id_in_update_contract -%>
-        <%= @resource_owner_id %>: '<%= @resource_owner_id %>_value',
+        <%= @resource_owner_id %>: SecureRandom.uuid,
 <% end -%>
-<% @fields.first(2).each_with_index do |field, index| -%>
+<% @fields.each_with_index do |field, index| -%>
 <% next if @resource_owner_id.present? && field == @resource_owner_id -%>
 <% field_meta = columns_meta.find { |col| col[:name] == field } -%>
-<% if field_meta && [:datetime, :timestamp].include?(field_meta[:type]) -%>
-        <%= field %>: Time.zone.now<%= index < @fields.first(2).length - 1 ? ',' : '' %>
+<% is_last = index == @fields.length - 1 -%>
+<% if field_meta -%>
+<% case field_meta[:type] -%>
+<% when :uuid -%>
+        <%= field %>: SecureRandom.uuid<%= is_last ? '' : ',' %>
+<% when :datetime, :timestamp -%>
+        <%= field %>: Time.zone.now<%= is_last ? '' : ',' %>
+<% when :date -%>
+        <%= field %>: Date.current<%= is_last ? '' : ',' %>
+<% when :boolean -%>
+        <%= field %>: false<%= is_last ? '' : ',' %>
+<% when :integer, :bigint -%>
+        <%= field %>: 2<%= is_last ? '' : ',' %>
+<% when :decimal, :float -%>
+        <%= field %>: 2.0<%= is_last ? '' : ',' %>
+<% when :json, :jsonb -%>
+        <%= field %>: { updated: true }<%= is_last ? '' : ',' %>
+<% when :text -%>
+        <%= field %>: 'updated_<%= field %>_text'<%= is_last ? '' : ',' %>
 <% else -%>
-        <%= field %>: 'updated_<%= field %>_value'<%= index < @fields.first(2).length - 1 ? ',' : '' %>
+        <%= field %>: 'updated_<%= field %>_value'<%= is_last ? '' : ',' %>
+<% end -%>
+<% else -%>
+        <%= field %>: 'updated_<%= field %>_value'<%= is_last ? '' : ',' %>
 <% end -%>
 <% end -%>
       }
@@ -41,7 +61,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
         result = described_class.new(contract).result
 
         expect(result).to be_success
-        expect(result.value!).to eq(entity)
+        expect(result.success).to eq(entity)
       end
     end
 

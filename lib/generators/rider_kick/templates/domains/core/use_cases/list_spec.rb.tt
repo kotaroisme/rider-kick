@@ -32,7 +32,7 @@ RSpec.describe <%= domain_class_name %>::UseCases::<%= [@route_scope_class, @sco
         result = described_class.new(contract).result
 
         expect(result).to be_success
-        expect(result.value!).to eq(pagination_entity)
+        expect(result.success).to eq(pagination_entity)
       end
     end
 

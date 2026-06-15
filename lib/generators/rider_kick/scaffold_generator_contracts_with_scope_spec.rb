@@ -70,7 +70,7 @@ RSpec.describe 'rider_kick:scaffold contracts (with scope)' do
 
         klass.new(['users', 'scope:dashboard']).generate_use_case
 
-        base = RiderKick.configuration.domains_path + '/use_cases/dashboard/users'
+        RiderKick.configuration.domains_path
         ['owner_list_user', 'owner_fetch_user_by_id', 'owner_create_user', 'owner_update_user', 'owner_destroy_user'].each do |uc|
           # expect(File).to exist("#{base}/#{uc}.rb")
         end

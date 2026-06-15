@@ -47,10 +47,12 @@ RSpec.describe 'rider_kick:scaffold list spec generation' do
           resource_name: article
           actor: owner
           resource_owner_id: account_id
+          resource_owner: account
           domains:
             action_list:
               use_case:
-                contract: []
+                contract:
+                  - "required(:account_id).filled(:string)"
               repository:
                 filters:
                   - "{ field: 'title', type: 'search' }"
@@ -73,13 +75,15 @@ RSpec.describe 'rider_kick:scaffold list spec generation' do
         content = File.read(list_spec_file)
 
         # Verify format matches user's requirements
-        expect(content).to include('let(:repository) { described_class }')
-        expect(content).to include('repository.new(params: params).call')
-        expect(content).to include('account_id: SecureRandom.uuid')
-        expect(content).to include('create_list(:article, 3, account_id: params[:account_id])')
-        expect(content).to include('context \'with search filters\'')
-        expect(content).to include('context \'with resource owner filter\'')
-        expect(content).to include('context \'with sorting\'')
+        expect(content).to include('require "rails_helper"')
+        expect(content).to include('subject(:result) { described_class.new(params: params).call }')
+        expect(content).to include('let(:account) { create(:account) }')
+        expect(content).to include('let(:account_id) { account.id }')
+        expect(content).to include('let!(:article_recent) { create(:article, account_id: account_id, created_at: 1.hour.ago) }')
+        expect(content).to include('let!(:other_account_article) { create(:article, account_id: other_account_id) }')
+        expect(content).to include('context "with valid params"')
+        expect(content).to include('context "with pagination"')
+        expect(content).to include('context "when account has no data"')
       end
     end
   end
@@ -142,9 +146,11 @@ RSpec.describe 'rider_kick:scaffold list spec generation' do
         content = File.read(list_spec_file)
 
         # Verify format without resource_owner_id
-        expect(content).to include('let(:repository) { described_class }')
-        expect(content).to include('repository.new(params: params).call')
-        expect(content).to include('create_list(:product, 3)')
+        expect(content).to include('require "rails_helper"')
+        expect(content).to include('subject(:result) { described_class.new(params: params).call }')
+        expect(content).to include('let!(:product_recent) { create(:product, created_at: 1.hour.ago) }')
+        expect(content).to include('context "when no resources exist"')
+        expect(content).to include('Models::Product.destroy_all')
         expect(content).not_to include('account_id')
         expect(content).not_to include('user_id')
       end
